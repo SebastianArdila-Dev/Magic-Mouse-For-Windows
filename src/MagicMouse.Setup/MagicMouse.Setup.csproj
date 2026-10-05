@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>../MagicMouse.Windows.App/Assets/MagicMouse.ico</ApplicationIcon>
+    <Version>0.1.2</Version>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <PathMap>$(MSBuildProjectDirectory)=/_/src/MagicMouse.Setup</PathMap>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(PayloadPath)" LogicalName="MagicMouse.Payload.zip" />
+  </ItemGroup>
+</Project>

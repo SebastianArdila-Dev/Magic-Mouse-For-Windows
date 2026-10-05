@@ -356,7 +356,7 @@ public sealed partial class MainWindow : Window
         var diagnostics = Card();
         var stack = new StackPanel { Spacing = 10 };
         stack.Children.Add(Text("Diagnóstico", 17, "#172235", true));
-        stack.Children.Add(Text($"Aplicación: Magic Mouse for Windows · 0.3.0-preview\nDispositivo detectado: {_currentMouseDevice?.Name ?? "No disponible"}\nCaptura HID: {(_capture.IsCapturing ? "activa" : "detenida")} · reportes observados: {_capture.ReportCount}\nVersión de ajustes: {_settings.SettingsSchemaVersion}", 12, "#64728A"));
+        stack.Children.Add(Text($"Aplicación: Magic Mouse for Windows · 0.1.2\nDispositivo detectado: {_currentMouseDevice?.Name ?? "No disponible"}\nCaptura HID: {(_capture.IsCapturing ? "activa" : "detenida")} · reportes observados: {_capture.ReportCount}\nVersión de ajustes: {_settings.SettingsSchemaVersion}", 12, "#64728A"));
         stack.Children.Add(Notice("La captura lee únicamente reportes que Windows permita abrir. Los bytes se guardan localmente y no se interpretan como contactos hasta verificar el protocolo."));
         _captureSummary = Text(_capture.Metadata is null ? "Captura detenida · sin reportes" : CaptureDescription(), 12, "#536884");
         stack.Children.Add(_captureSummary);
