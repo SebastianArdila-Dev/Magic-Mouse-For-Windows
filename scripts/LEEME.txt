@@ -1,0 +1,21 @@
+Magic Mouse for Windows
+Creado por Sebastian Ardila
+
+1. Extrae todos los archivos del ZIP a una carpeta.
+2. Abre MagicMouse.Windows.App.exe o Instalar.cmd.
+3. Arrastra el logo a Aplicaciones o pulsa Instalar y continuar.
+   Puedes elegir Usar sin instalar para conservar la carpeta portable.
+4. Completa la bienvenida y pulsa Finalizar.
+
+Windows 10 (19041+) o Windows 11, x64. No requiere instalar .NET.
+Los DLL y las carpetas de idiomas son necesarios: no los elimines.
+
+Al cerrar la ventana, la app sigue en la bandeja del sistema.
+Para salir completamente, usa Salir en su icono de la bandeja.
+
+Versión preliminar. Los gestos físicos necesitan acceso HID y pruebas
+con un Magic Mouse real. No incluye un controlador táctil firmado.
+El tamaño del cursor en algunos controles todavía tiene un caso pendiente.
+
+Documentación, código y soporte:
+https://github.com/SebastianArdila-Dev/Magic-Mouse-For-Windows

@@ -1,71 +1,49 @@
 <p align="center"><img src="docs/images/magic-mouse.png" width="96" alt="Magic Mouse for Windows"></p>
 <h1 align="center">Magic Mouse for Windows</h1>
-<p align="center">Tu Magic Mouse, con una experiencia cuidada en Windows.</p>
-<p align="center">Creado por <a href="https://github.com/SebastianArdila-Dev">Sebastian Ardila</a> · <a href="https://x.com/SebastianardSWE">X / Twitter</a></p>
+<p align="center">Tu Magic Mouse en Windows, con una experiencia cuidada.</p>
 
-Soy Sebastian. Creé este proyecto para que más personas puedan aprovechar su Magic Mouse en Windows sin pagar por una aplicación de configuración. Me importa tanto lo que hace como lo que se siente al usarlo: una interfaz limpia, ajustes fáciles de encontrar y una experiencia que no te interrumpa.
+Soy Sebastian Ardila. Creé esta app gratuita para aprovechar mejor nuestro Magic Mouse en Windows. Si te sirve, puedes apoyar el proyecto con una estrella, compartirlo o proponer una mejora.
 
-Esta es una **versión de desarrollo para Windows x64**. La interfaz, los perfiles y los ajustes del sistema se pueden probar ahora. La compatibilidad de los gestos físicos depende del acceso HID que permita Windows y aún necesita pruebas con un Magic Mouse real. Prefiero dejar eso claro antes de prometer algo que todavía no he podido comprobar.
+![La aplicación en modo oscuro](docs/images/appearance-dark.png)
 
-![Aspecto de la aplicación](docs/images/appearance-dark.png)
+## Instalar
 
-## Qué puedes hacer
+Requiere **Windows 10 (19041+) o Windows 11, x64**.
 
-- Elegir apariencia clara, oscura o del sistema.
-- Configurar estilo, tamaño y color del puntero, con aplicación explícita a Windows y restauración del esquema original.
-- Ajustar la velocidad del puntero y el intercambio de botones de Windows.
-- Preparar navegación con un dedo, escritorios con dos, taps, doble taps, scroll natural e inercia.
-- Guardar perfiles por aplicación y seleccionarlos al cambiar de ventana activa.
-- Ver la batería en una cabecera fija, cuando Windows expone su nivel y estado de carga.
-- Cerrar la ventana y seguir en la bandeja del sistema. Desde la bandeja puedes abrir la app o salir por completo.
-- Volver a conectar la lectura táctil automáticamente cuando falla, con reintentos espaciados.
-- Probar gestos con el simulador local, revisar controladores y exportar ajustes o diagnóstico HID.
+1. [Descarga el ZIP para Windows](https://github.com/SebastianArdila-Dev/Magic-Mouse-For-Windows/releases/tag/v0.3.1-preview).
+2. Extrae la carpeta completa y abre `MagicMouse.Windows.App.exe` o `Instalar.cmd`.
+3. Arrastra el logo a **Aplicaciones** o pulsa **Instalar y continuar**. También puedes elegir **Usar sin instalar**.
+4. Completa las preferencias y pulsa **Finalizar**. Empareja el mouse en Bluetooth cuando lo tengas.
 
-Los ajustes se guardan en tu usuario de Windows. No hay cuenta obligatoria, telemetría ni un servidor que reciba tus preferencias.
-
-## Descargar e instalar
-
-Descarga la [versión para Windows x64](https://github.com/SebastianArdila-Dev/magic-mouse-for-windows/releases/tag/v0.3.0-preview) y extrae el ZIP completo. No ejecutes el archivo desde dentro del ZIP: el ejecutable necesita los archivos que lo acompañan.
-
-1. Abre `MagicMouse.Windows.App.exe` o `Instalar.cmd`.
-2. En el instalador visual, arrastra el logo hacia **Aplicaciones** o pulsa **Instalar y continuar**. Se copia al directorio de programas de tu usuario y se crea un acceso en el menú Inicio, sin privilegios de administrador.
-3. Si prefieres usar la carpeta directamente, elige **Usar sin instalar**.
-4. Completa la bienvenida, empareja el mouse en Bluetooth cuando lo tengas y pulsa **Finalizar**. La aplicación completa aparece con una transición suave.
+No necesitas instalar .NET ni ejecutar como administrador. Conserva todos los archivos del ZIP: los DLL y las carpetas de idiomas son dependencias de la aplicación.
 
 ![Bienvenida](docs/images/welcome-dark.png)
 
-La instalación por arrastre es una experiencia propia de esta app para Windows. No utiliza un archivo DMG ni instala componentes de macOS. Incluye el runtime de la app; no incluye un controlador multitáctil de Apple ni de terceros.
+## Funciones
 
-Para desinstalar la copia de usuario, sal desde la bandeja y elimina `%LOCALAPPDATA%\Programs\MagicMouseForWindows` y su acceso del menú Inicio. Los ajustes se conservan aparte en `%LOCALAPPDATA%\MagicMouseForWindows`; elimínalos solo si también quieres borrar tu configuración. Desactiva **Iniciar con Windows** antes de desinstalar.
+- Temas claro, oscuro y del sistema.
+- Ajustes de puntero, velocidad, botones y desplazamiento.
+- Configuración de gestos y simulador local.
+- Perfiles por aplicación, guardados en tu usuario.
+- Batería cuando Windows proporciona el dato.
+- Funcionamiento en la bandeja al cerrar la ventana y reintentos de lectura del dispositivo.
 
-## Compatibilidad y estado
+**Versión preliminar:** los gestos físicos requieren acceso HID y todavía necesitan pruebas con un Magic Mouse real. No se incluye un controlador táctil firmado. Sigue pendiente una discrepancia del tamaño del cursor en algunos controles. Consulta [las limitaciones](KNOWN_LIMITATIONS.md).
 
-Requiere Windows 10 versión 2004 / compilación 19041 o posterior, x64. Windows 11 también es compatible. ARM64 tiene configuración de proyecto, pero todavía no está verificado.
+## Datos y desinstalación
 
-| Función | Estado |
-| --- | --- |
-| Interfaz, temas, perfiles y persistencia | Implementados y comprobados localmente |
-| Velocidad e intercambio de botones de Windows | Aplicación y restauración comprobadas |
-| Cursor | Archivos y asignación implementados; la comprobación del tamaño visible sobre controles aún tiene un caso pendiente |
-| Gestos y scroll | Motor y simulador comprobados; falta validar hardware físico |
-| Batería y carga | Solo datos reales que Windows exponga; sin hardware no se afirma compatibilidad |
-| Reconexión | Observador y reintentos implementados; pendiente de prueba de desconexión Bluetooth real |
-| Zonas físicas, clic simultáneo y detección de levantamiento | Desactivados; requieren un controlador de filtro compatible |
+La app no pide una cuenta ni envía telemetría. Guarda ajustes y diagnósticos localmente en `%LOCALAPPDATA%\MagicMouseForWindows`. Los diagnósticos pueden contener rutas e identificadores del dispositivo; revísalos antes de compartirlos.
 
-No se ofrece paridad completa con macOS ni se anuncia como controlador plug and play. Consulta [limitaciones](KNOWN_LIMITATIONS.md) y [paridad con macOS](PARIDAD-MAC.md) para distinguir funciones disponibles de las que necesitan hardware o controlador.
+Para desinstalar, desactiva **Iniciar con Windows**, sal desde la bandeja y elimina `%LOCALAPPDATA%\Programs\MagicMouseForWindows` y su acceso del menú Inicio. Borra la carpeta de ajustes solo si también quieres perder tus preferencias.
 
-## Compilar y colaborar
+## Desarrollo
 
-El proyecto usa C#, .NET 8 y WinUI 3. Consulta [BUILDING.md](BUILDING.md) para compilar y crear el ZIP; [TESTING.md](TESTING.md) describe las pruebas y qué queda fuera de ellas.
+C#, .NET 8 y WinUI 3. [Cómo compilar, probar y empaquetar](BUILDING.md).
 
-Si encuentras un problema, abre un issue con tu versión de Windows, modelo del Magic Mouse, pasos para reproducirlo y qué esperabas que pasara. Revisa los archivos de diagnóstico antes de compartirlos: pueden incluir rutas de ejecutables e identificadores del dispositivo.
+`src/` contiene la app; `tests/` conserva las pruebas del núcleo usadas en la compilación automática. No se incluyen en el ZIP instalable. Los informes de pruebas, capturas de diagnóstico, configuraciones personales y herramientas internas de QA quedan fuera de la distribución.
 
-Si este proyecto te sirve, una estrella, una recomendación o una prueba con tu Magic Mouse ayudan mucho. También puedes seguirme en [X](https://x.com/SebastianardSWE) y [GitHub](https://github.com/SebastianArdila-Dev) para conocer lo que estoy construyendo.
+Para reportar un problema, abre un issue con tu versión de Windows, modelo del mouse y pasos para reproducirlo. No adjuntes contraseñas ni datos privados.
 
-Gracias por usarlo y ayudarme a mejorarlo.
+[GitHub · SebastianArdila-Dev](https://github.com/SebastianArdila-Dev) · [X · SebastianardSWE](https://x.com/SebastianardSWE)
 
-— Sebastian Ardila
-
-## Licencia
-
-El código del proyecto se comparte bajo [MIT](LICENSE). Las dependencias y la fuente Inter mantienen sus propias licencias, detalladas en [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Este es un proyecto independiente, sin afiliación con Apple. Magic Mouse y Apple son marcas de Apple Inc.
+Código bajo [MIT](LICENSE). [Licencias de dependencias](THIRD_PARTY_LICENSES.md). Proyecto independiente, sin afiliación con Apple.

@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.3.1-preview
+
+- Documentación reducida a instalación, funciones, limitaciones y compilación.
+- Retiradas las herramientas internas de QA de la aplicación distribuida.
+- Eliminados documentación de trabajo redundante y un recurso sin uso.
+- Distribución Release sin símbolos de depuración ni rutas locales de compilación.
+- Se conservan las pruebas del núcleo para verificar cambios con GitHub Actions.
+
 ## 0.3.0-preview
 
 - Instalación por arrastre o botón, y opción portable.

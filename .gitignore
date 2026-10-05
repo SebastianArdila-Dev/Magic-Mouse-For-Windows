@@ -16,3 +16,10 @@ startup-error.txt
 .env
 .env.*
 *.lnk
+*.pfx
+*.p12
+*.pem
+*.key
+credentials.json
+.ssh/
+.aws/

@@ -81,17 +81,9 @@ public sealed partial class MainWindow : Window
         catch (Exception ex) { await LogAsync($"Foreground application monitoring failed: {ex.Message}"); }
         try { InitializeLifecycle(); } catch (Exception exception) { await LogAsync($"Lifecycle startup failed: {exception}"); }
         var arguments=Environment.GetCommandLineArgs();
-        if(!arguments.Contains("--smoke-test") && !arguments.Contains("--visual-qa") && !arguments.Contains("--stability-test") && !arguments.Contains("--background") &&
+        if(!arguments.Contains("--background") &&
            (arguments.Contains("--install") || !_settings.Toggles.GetValueOrDefault("app.onboardingComplete")))
             ShowIntroduction(arguments.Contains("--install") || !InstallationService.IsInstalled ? 0 : 1);
-        if (arguments.Contains("--drag-test")) await VerifyLiveDragAsync();
-        if (arguments.Contains("--stability-test")) await RunStabilityTestAsync();
-        if (arguments.Contains("--smoke-test")) await RunSmokeTestAsync();
-        if (Environment.GetCommandLineArgs().Contains("--visual-qa"))
-        {
-            try { await RenderVisualQaAsync(); }
-            catch (Exception exception) { await LogAsync($"Visual QA render failed: {exception}"); }
-        }
     }
 
     private void AddNavigation(string page)

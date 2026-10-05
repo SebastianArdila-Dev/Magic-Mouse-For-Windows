@@ -48,7 +48,7 @@ public sealed partial class MainWindow
         var accent=AccentColor(Preferences.Choices.GetValueOrDefault("appearance.color","Azul"));
         RootGrid.ChangeCursor(AppCursorService.Create(style,size,accent));
         _chrome?.SetAppCursor(style,size,accent);
-        if(!_runningSmokeTest && _editingPreferences is null && _settings.Toggles.GetValueOrDefault("appearance.systemApplied"))
+        if(_editingPreferences is null && _settings.Toggles.GetValueOrDefault("appearance.systemApplied"))
             SystemCursorService.Apply(style,size,accent);
     }
     private void RestoreSavedSystemCursor()
