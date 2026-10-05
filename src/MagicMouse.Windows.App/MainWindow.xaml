@@ -18,9 +18,9 @@
     </Button>
     <StackPanel x:Name="NavigationPanel" Grid.Row="3" Spacing="3"/>
     <StackPanel Grid.Row="4" Spacing="8" Margin="4,0,4,0">
-     <Border x:Name="DeviceBadge" Background="{ThemeResource DeviceGlassSurfaceBrush}" BorderBrush="{ThemeResource DeviceGlassEdgeBrush}" BorderThickness="1" CornerRadius="16" Padding="12">
-      <StackPanel Spacing="7"><TextBlock x:Name="DeviceStatusText" Text="Buscando dispositivos…" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock x:Name="DeviceDetailText" Text="Sin datos de hardware todavía" FontSize="11" Foreground="{ThemeResource SecondaryTextBrush}" TextWrapping="Wrap"/>
-       <StackPanel Orientation="Horizontal" Spacing="6"><Button x:Name="RetryDeviceButton" Content="Reintentar" FontSize="11" Padding="8,4"/><Button x:Name="BluetoothSettingsButton" Content="Bluetooth" FontSize="11" Padding="8,4"/></StackPanel>
+     <Border x:Name="DeviceBadge" Background="{ThemeResource DeviceGlassSurfaceBrush}" BorderBrush="{ThemeResource DeviceGlassEdgeBrush}" BorderThickness="1" CornerRadius="16" Padding="14">
+      <StackPanel Spacing="9"><TextBlock x:Name="DeviceStatusText" Text="Buscando dispositivos…" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" TextAlignment="Center" LineHeight="17"/><TextBlock x:Name="DeviceDetailText" Text="Sin datos de hardware todavía" FontSize="11" Foreground="{ThemeResource SecondaryTextBrush}" TextWrapping="Wrap" TextAlignment="Center" LineHeight="15"/>
+       <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" Margin="0,2,0,0"><Button x:Name="RetryDeviceButton" Content="Reintentar" FontSize="11" Padding="8,4" MinHeight="28" CornerRadius="8"/><Button x:Name="BluetoothSettingsButton" Content="Bluetooth" FontSize="11" Padding="8,4" MinHeight="28" CornerRadius="8"/></StackPanel>
       </StackPanel>
      </Border>
 

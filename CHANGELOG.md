@@ -7,6 +7,7 @@
 - Eliminados documentación de trabajo redundante y un recurso sin uso.
 - Distribución Release sin símbolos de depuración ni rutas locales de compilación.
 - Se conservan las pruebas del núcleo para verificar cambios con GitHub Actions.
+- Tarjeta de conexión centrada, con espacios más equilibrados y botones alineados.
 
 ## 0.3.0-preview
 

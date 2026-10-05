@@ -1,10 +1,23 @@
-<p align="center"><img src="docs/images/magic-mouse.png" width="96" alt="Magic Mouse for Windows"></p>
+<p align="center"><img src="docs/images/liquid-glass-hero.png" width="100%" alt="Magic Mouse for Windows — Free · Open source"></p>
 <h1 align="center">Magic Mouse for Windows</h1>
 <p align="center">Tu Magic Mouse en Windows, con una experiencia cuidada.</p>
 
 Soy Sebastian Ardila. Creé esta app gratuita para aprovechar mejor nuestro Magic Mouse en Windows. Si te sirve, puedes apoyar el proyecto con una estrella, compartirlo o proponer una mejora.
 
-![La aplicación en modo oscuro](docs/images/appearance-dark.png)
+## Así se ve
+
+Capturas reales de la interfaz. Pulsa una imagen para verla completa.
+
+<table>
+<tr>
+<td width="50%" align="center"><a href="docs/images/appearance-light.png"><img src="docs/images/appearance-light.png" alt="Apariencia clara" width="100%"></a><br><sub>Modo claro</sub></td>
+<td width="50%" align="center"><a href="docs/images/appearance-dark.png"><img src="docs/images/appearance-dark.png" alt="Apariencia oscura" width="100%"></a><br><sub>Modo oscuro</sub></td>
+</tr>
+<tr>
+<td width="50%" align="center"><a href="docs/images/gestures-dark.png"><img src="docs/images/gestures-dark.png" alt="Configuración de gestos" width="100%"></a><br><sub>Gestos</sub></td>
+<td width="50%" align="center"><a href="docs/images/pointer-light.png"><img src="docs/images/pointer-light.png" alt="Puntero y desplazamiento" width="100%"></a><br><sub>Puntero y desplazamiento</sub></td>
+</tr>
+</table>
 
 ## Instalar
 
@@ -17,7 +30,7 @@ Requiere **Windows 10 (19041+) o Windows 11, x64**.
 
 No necesitas instalar .NET ni ejecutar como administrador. Conserva todos los archivos del ZIP: los DLL y las carpetas de idiomas son dependencias de la aplicación.
 
-![Bienvenida](docs/images/welcome-dark.png)
+<p align="center"><img src="docs/images/welcome-dark.png" width="440" alt="Bienvenida y configuración inicial"></p>
 
 ## Funciones
 

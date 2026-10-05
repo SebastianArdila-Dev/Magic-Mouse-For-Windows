@@ -1,8 +1,8 @@
 # Limitaciones conocidas
 
-- Los gestos físicos necesitan una colección HID accesible y hardware real para validarlos. Esta sesión no dispone de un Magic Mouse.
+- Los gestos físicos necesitan una colección HID accesible. La compatibilidad con un Magic Mouse real sigue pendiente de verificación.
 - No se incluye un controlador de filtro firmado. Las zonas físicas, clic simultáneo y detectar levantamiento están desactivados.
-- El tamaño visible del cursor sobre algunos controles aún necesita resolver una discrepancia detectada en diagnóstico. Los archivos generados sí tienen las dimensiones solicitadas.
+- Algunos controles pueden no respetar todavía el tamaño del cursor seleccionado.
 - Los reintentos de lectura no pueden evitar que el dispositivo se apague, pierda señal Bluetooth o sea reservado por el controlador de Windows.
 - Batería, firmware y serial dependen de lo que Windows exponga; no se inventan.
 - El indicador de clic se reproduce dentro de la app. Zoom inteligente utiliza atajos compatibles; no es el zoom semántico de macOS.

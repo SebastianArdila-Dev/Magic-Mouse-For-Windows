@@ -8,5 +8,6 @@ if ($LASTEXITCODE -ne 0) { throw "La publicación no se completó." }
 Copy-Item -LiteralPath (Join-Path $projectRoot "scripts/Instalar.cmd") -Destination $portableRoot
 Copy-Item -LiteralPath (Join-Path $projectRoot "scripts/LEEME.txt") -Destination $portableRoot
 Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination $portableRoot
+Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD_PARTY_LICENSES.md") -Destination $portableRoot
 Compress-Archive -LiteralPath $portableRoot -DestinationPath ($portableRoot + ".zip")
 Write-Output ($portableRoot + ".zip")
