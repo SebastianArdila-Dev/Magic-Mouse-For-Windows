@@ -1,0 +1,29 @@
+Feature,Referencia,¿Posible?,API o capa,Estado,Prueba requerida,Notas
+Estado conexión,Imagen B,Probable,DeviceWatcher + DeviceInformation,HID_DISCOVERY_IMPLEMENTED_UNTESTED,Conectar desconectar sleep resume,Mostrar estado observado
+Modelo/generación,Imagen B,Parcial,VID PID descriptor/IDs,PARTIAL_ID_MATCH_UNTESTED,Hardware por generación,IDs 05AC:030D 05AC:0269 y 05AC:0323 reconocidos; no se infiere año
+Batería porcentaje,Imagen B,Condicional,HID feature report o Battery API si expuesta,Pendiente,Comparar Windows con nivel real,No simular
+Estado carga,Imagen B,Condicional,HID/Bluetooth battery metadata,Pendiente,Hardware por modelo,Puede ser unavailable
+Serial/firmware,Imagen B,Condicional,Descriptor/API del dispositivo,Pendiente,Inspección descriptor,Ocultar si no disponible
+Live touches,Imagen B,Condicional,HID reports + touch parser,Pendiente,Contactos 1-3 dedos,Raw capture exists; contact parser requires hardware fixtures
+Scrolling vertical,Imagen B,Condicional,HID parser + scroll injection,Pendiente,Suave y estándar,Validar contención con controlador mouse
+Scrolling horizontal,Imagen B,Condicional,HID parser + horizontal wheel,Pendiente,Varias apps,Compatibilidad app variable
+Invertir direcciones,Imagen B,Sí si hay deltas,Motor de scroll,Pendiente,Automática en pruebas,Preferencia local
+Axis lock,Imagen B,Parcial,Motor de scroll,Pendiente,Trayectorias diagonales,Umbral configurable
+Smooth/inercia,Imagen B,Parcial,Motor de scroll y temporizador de alta resolución,Pendiente,Latencia/CPU,No asumir pixel precision de HID
+Scroll 1 o 2 dedos,Imagen B,Condicional,Parser touch,Pendiente,Fixtures + hardware,Número real de contactos requerido
+Swipe rápido 1 dedo,Imagen B,Condicional,Core GestureRecognizer,CORE_IMPLEMENTED_UNTESTED,Replay + hardware,Recognition code exists; no parsed HID frames yet
+Swipe 2 dedos,Imagen B,Condicional,Core GestureRecognizer,CORE_IMPLEMENTED_UNTESTED,Replay + hardware,Recognition code exists; no parsed HID frames yet
+Cambio escritorio,Imagen B,Parcial,Atajos Win+Ctrl+flechas vía SendInput,Pendiente,Windows 10/11,Envío puede fallar por UIPI/foco
+Tap 1/2/3 dedos,Imagen B,Condicional,Parser touch + action dispatcher,Pendiente,Hardware y regresión clic,No crear toggle antes de soportarlo
+Click primario/secundario,Imagen B,Windows ya lo expone,Raw Input/settings del sistema,Pendiente,Click físico,Evitar interceptar salvo soporte confirmado
+Click central,Imagen B,Mapeo/SendInput o emulación,Pendiente,Apps variadas,La captura funcional ofrece opciones pero no protocolo
+Velocidad base,Imagen B,Parcial,SystemParametersInfo o motor de movimiento,Pendiente,Prueba con otras apps,Evitar alterar globalmente sin consentimiento
+Invertir botones/left handed,Imagen B,Sí,Windows settings API/PInvoke,Pendiente,Revertir al desactivar,No pisar cambio externo del usuario
+Per-app profiles,Imagen A/B,Parcial,SettingsStore + ProfileResolver,PARTIAL_SETTINGS_RESOLVER,Apps elevadas/desktop seguro,UI stores mapping; foreground monitor not connected
+Aplicaciones permitidas,Imagen A,Sí,Picker + perfiles,Pendiente,Persistencia,Mostrar solo entradas añadidas
+Tema/estilo puntero,Imagen A,Parcial,Windows pointer settings/asset propio,Pendiente,Windows 10/11,Estilos propios requieren recursos
+Click visual indicator,Imagen A,Posible,Overlay WinUI,Pendiente,Multi-monitor/DPI,Overlay accesible y apagable
+Inicio con Windows,Imagen B,Posible,StartupTask/registro MSIX según empaquetado,Pendiente,Instalar/desinstalar,Opt-in
+Notificaciones,Imagen B,Posible,Windows App SDK notifications,Pendiente,Permisos del usuario,No prometer battery alert sin batería disponible
+Diagnóstico HID,Imagen B,Condicional,Win32 HID read + local export,RAW_CAPTURE_IMPLEMENTED_UNTESTED,Windows physical device,Descriptor caps and reports in source; access may be denied by driver
+Magic Keyboard,Especificación,Parcial,Raw Input/HID keyboard,Pendiente,Modelos y funciones,Teclas estándar funcionan por Windows; remapeo necesita cautela
