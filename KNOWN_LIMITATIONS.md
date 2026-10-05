@@ -1,6 +1,6 @@
 # Limitaciones conocidas
 
-- Los gestos físicos necesitan una colección HID accesible. La compatibilidad con un Magic Mouse real sigue pendiente de verificación.
+- Los gestos físicos necesitan una colección HID accesible. 
 - No se incluye un controlador de filtro firmado. Las zonas físicas, clic simultáneo y detectar levantamiento están desactivados.
 - Algunos controles pueden no respetar todavía el tamaño del cursor seleccionado.
 - Los reintentos de lectura no pueden evitar que el dispositivo se apague, pierda señal Bluetooth o sea reservado por el controlador de Windows.
