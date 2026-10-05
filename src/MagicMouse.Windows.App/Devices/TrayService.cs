@@ -10,20 +10,24 @@ internal sealed class TrayService : IDisposable
     private readonly nint _handle;
     private readonly SubclassProc _callback;
     private NotifyIconData _icon;
+    private nint _ownedIcon;
     private bool _disposed;
     public event Action? ExitRequested;
 
     public TrayService(Window window)
     {
         _window = window; _handle = WindowNative.GetWindowHandle(window); _callback = WindowProcedure;
+        var size=(int)Math.Round(16*GetDpiForWindow(_handle)/96.0);
+        _ownedIcon=LoadImage(0,Path.Combine(AppContext.BaseDirectory,"Assets","MagicMouse.ico"),1,size,size,0x10);
+        if(_ownedIcon==0) throw new InvalidOperationException("No se pudo cargar el icono de Magic Mouse.");
         _icon = new NotifyIconData
         {
             Size = (uint)Marshal.SizeOf<NotifyIconData>(), Window = _handle, Id = 1,
             Flags = 1 | 2 | 4, CallbackMessage = 0x8000 + 42,
-            Icon = LoadIcon(0, new nint(32512)), Tip = "Magic Mouse for Windows"
+            Icon = _ownedIcon, Tip = "Magic Mouse for Windows"
         };
-        if (!SetWindowSubclass(_handle, _callback, 2, 0)) throw new InvalidOperationException("No se pudo preparar la bandeja del sistema.");
-        if (!ShellNotifyIcon(0, ref _icon)) { RemoveWindowSubclass(_handle, _callback, 2); throw new InvalidOperationException("Windows no permitió crear el icono de bandeja."); }
+        if (!SetWindowSubclass(_handle, _callback, 2, 0)) {DestroyIcon(_ownedIcon);_ownedIcon=0;throw new InvalidOperationException("No se pudo preparar la bandeja del sistema.");}
+        if (!ShellNotifyIcon(0, ref _icon)) { RemoveWindowSubclass(_handle, _callback, 2);DestroyIcon(_ownedIcon);_ownedIcon=0;throw new InvalidOperationException("Windows no permitió crear el icono de bandeja."); }
     }
     internal void Show()
     {
@@ -57,6 +61,7 @@ internal sealed class TrayService : IDisposable
     {
         if (_disposed) return; _disposed = true;
         ShellNotifyIcon(2, ref _icon); RemoveWindowSubclass(_handle, _callback, 2);
+        if(_ownedIcon!=0) {DestroyIcon(_ownedIcon);_ownedIcon=0;}
     }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct NotifyIconData
@@ -72,7 +77,9 @@ internal sealed class TrayService : IDisposable
     [StructLayout(LayoutKind.Sequential)] private struct Point { public int X, Y; }
     private delegate nint SubclassProc(nint handle, uint message, nuint wParam, nint lParam, nuint id, nuint reference);
     [DllImport("shell32.dll", EntryPoint = "Shell_NotifyIconW", CharSet = CharSet.Unicode)] private static extern bool ShellNotifyIcon(uint operation, ref NotifyIconData icon);
-    [DllImport("user32.dll", EntryPoint = "LoadIconW")] private static extern nint LoadIcon(nint instance, nint name);
+    [DllImport("user32.dll",EntryPoint="LoadImageW",CharSet=CharSet.Unicode)] private static extern nint LoadImage(nint instance,string path,uint type,int width,int height,uint flags);
+    [DllImport("user32.dll")] private static extern bool DestroyIcon(nint icon);
+    [DllImport("user32.dll")] private static extern uint GetDpiForWindow(nint handle);
     [DllImport("user32.dll")] private static extern nint CreatePopupMenu();
     [DllImport("user32.dll", EntryPoint = "AppendMenuW", CharSet = CharSet.Unicode)] private static extern bool AppendMenu(nint menu, uint flags, nuint id, string text);
     [DllImport("user32.dll")] private static extern uint TrackPopupMenu(nint menu, uint flags, int x, int y, int reserved, nint handle, nint rectangle);

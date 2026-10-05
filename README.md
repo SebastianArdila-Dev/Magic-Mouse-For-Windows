@@ -23,7 +23,7 @@ Capturas reales de la interfaz. Pulsa una imagen para verla completa.
 
 Requiere **Windows 10 (19041+) o Windows 11, x64**.
 
-1. [Descarga el ZIP para Windows](https://github.com/SebastianArdila-Dev/Magic-Mouse-For-Windows/releases/tag/v0.3.1-preview).
+1. [Descarga el ZIP para Windows](https://github.com/SebastianArdila-Dev/Magic-Mouse-For-Windows/releases/tag/v0.3.2-preview).
 2. Extrae la carpeta completa y abre `MagicMouse.Windows.App.exe` o `Instalar.cmd`.
 3. Arrastra el logo a **Aplicaciones** o pulsa **Instalar y continuar**. También puedes elegir **Usar sin instalar**.
 4. Completa las preferencias y pulsa **Finalizar**. Empareja el mouse en Bluetooth cuando lo tengas.

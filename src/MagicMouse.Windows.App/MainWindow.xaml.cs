@@ -43,6 +43,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory,"Assets","MagicMouse.ico"));
         SystemBackdrop = new DesktopAcrylicBackdrop();
         InitializeShell();
         InitializeBattery();

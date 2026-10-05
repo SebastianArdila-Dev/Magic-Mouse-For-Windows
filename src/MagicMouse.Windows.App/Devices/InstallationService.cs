@@ -35,6 +35,7 @@ internal static class InstallationService
             var shortcutPath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs),"Magic Mouse for Windows.lnk");
             dynamic shortcut=shell.CreateShortcut(shortcutPath); shortcutObject=shortcut;
             shortcut.TargetPath=Path.Combine(destination,"MagicMouse.Windows.App.exe");
+            shortcut.IconLocation=shortcut.TargetPath+",0";
             shortcut.WorkingDirectory=destination; shortcut.Description="Magic Mouse for Windows · Sebastian Ardila"; shortcut.Save();
         }
         finally

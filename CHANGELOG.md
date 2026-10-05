@@ -1,5 +1,9 @@
 # Cambios
 
+## 0.3.2-preview
+
+- Icono propio en el ejecutable, la barra de tareas, la vista previa, el acceso del menú Inicio y la bandeja del sistema.
+
 ## 0.3.1-preview
 
 - Documentación reducida a instalación, funciones, limitaciones y compilación.
