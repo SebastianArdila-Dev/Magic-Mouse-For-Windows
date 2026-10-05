@@ -25,7 +25,7 @@ Los ajustes se guardan en tu usuario de Windows. No hay cuenta obligatoria, tele
 
 ## Descargar e instalar
 
-Descarga la [versión para Windows x64](https://github.com/SebastianArdila-Dev/magic-mouse-for-windows/releases/latest) y extrae el ZIP completo. No ejecutes el archivo desde dentro del ZIP: el ejecutable necesita los archivos que lo acompañan.
+Descarga la [versión para Windows x64](https://github.com/SebastianArdila-Dev/magic-mouse-for-windows/releases/tag/v0.3.0-preview) y extrae el ZIP completo. No ejecutes el archivo desde dentro del ZIP: el ejecutable necesita los archivos que lo acompañan.
 
 1. Abre `MagicMouse.Windows.App.exe` o `Instalar.cmd`.
 2. En el instalador visual, arrastra el logo hacia **Aplicaciones** o pulsa **Instalar y continuar**. Se copia al directorio de programas de tu usuario y se crea un acceso en el menú Inicio, sin privilegios de administrador.
