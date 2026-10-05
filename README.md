@@ -2,7 +2,7 @@
 <h1 align="center">Magic Mouse for Windows</h1>
 <p align="center">Tu Magic Mouse en Windows, con una experiencia cuidada.</p>
 
-Soy Sebastian Ardila. Creé esta app gratuita para aprovechar mejor nuestro Magic Mouse en Windows. Si te sirve, puedes apoyar el proyecto con una estrella, compartirlo o proponer una mejora.
+Desarrolle esta app gratuita para aprovechar mejor nuestro Magic Mouse en Windows. Si te sirve, puedes apoyar el proyecto con una estrella, compartirlo o proponer una mejora.
 
 ## Así se ve
 
