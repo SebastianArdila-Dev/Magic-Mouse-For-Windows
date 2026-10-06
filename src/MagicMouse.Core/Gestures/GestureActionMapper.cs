@@ -32,6 +32,15 @@ public static class GestureActionMapper
             GestureKind.TwoFingerDoubleTap => "Doble tap con 2 dedos",
             _ => throw new ArgumentOutOfRangeException(nameof(gesture))
         };
-        return settings.Choices.GetValueOrDefault("gesture:" + name, "Sin acción");
+        var action = settings.Choices.GetValueOrDefault("gesture:" + name, "Sin acción");
+        if (action != "Sin acción" || !settings.Toggles.GetValueOrDefault("buttons.tapClick")) return action;
+        return kind switch
+        {
+            GestureKind.OneFingerTap when settings.Choices.GetValueOrDefault("buttons.tap1") == "1 dedo: clic principal" => "Clic principal",
+            GestureKind.TwoFingerTap when settings.Choices.GetValueOrDefault("buttons.tap2") == "2 dedos: clic secundario" => "Clic secundario",
+            GestureKind.TwoFingerTap when settings.Choices.GetValueOrDefault("buttons.tap2") == "2 dedos: clic central" => "Clic central",
+            GestureKind.ThreeFingerTap when settings.Choices.GetValueOrDefault("buttons.tap3") == "3 dedos: clic central" => "Clic central",
+            _ => action
+        };
     }
 }

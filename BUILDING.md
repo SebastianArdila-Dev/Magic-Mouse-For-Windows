@@ -11,4 +11,4 @@ dotnet test tests/MagicMouse.Core.Tests/MagicMouse.Core.Tests.csproj -c Release
 
 El ZIP portable y el instalador ejecutable aparecen en `artifacts/`. El instalador incluye el ZIP como recurso y abre el asistente de la app; no requiere descargar .NET. Incluye el runtime, la aplicación, las licencias y las instrucciones de instalación. No incluye símbolos de depuración, código de pruebas, ajustes personales ni logs.
 
-Las 43 pruebas del núcleo cubren gestos, scroll, perfiles, persistencia, batería, archivos de cursor y política de reconexión. GitHub Actions las ejecuta y genera el paquete. No sustituyen la validación Bluetooth/HID con hardware real.
+Las 60 pruebas del núcleo cubren gestos, scroll, perfiles, persistencia, batería, archivos de cursor y política de reconexión. GitHub Actions las ejecuta y genera el paquete. No sustituyen la validación Bluetooth/HID con hardware real.

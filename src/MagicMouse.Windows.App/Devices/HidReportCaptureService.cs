@@ -57,43 +57,46 @@ public sealed class HidReportCaptureService : IDisposable
 
     public Task<HidCaptureMetadata> StartAsync(DeviceInformation deviceInformation)
     {
-        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
-        if (_stream is not null) throw new InvalidOperationException("Stop the current capture before starting another.");
-
-        var handle = CreateFile(deviceInformation.Id, GenericRead, FileShareRead | FileShareWrite, IntPtr.Zero, OpenExisting, FileFlagOverlapped, IntPtr.Zero);
-        if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows could not open this HID collection for reading.");
-
-        try
+        lock (_sync)
         {
-            var attributes = new HidAttributes { Size = (uint)Marshal.SizeOf<HidAttributes>() };
-            if (!HidD_GetAttributes(handle, ref attributes)) throw new Win32Exception(Marshal.GetLastWin32Error(), "HID attributes were not available.");
-            if (!HidD_GetPreparsedData(handle, out var preparsed)) throw new Win32Exception(Marshal.GetLastWin32Error(), "The HID report descriptor could not be read.");
+            ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+            if (_stream is not null) throw new InvalidOperationException("Stop the current capture before starting another.");
 
-            HidpCaps caps;
+            var handle = CreateFile(deviceInformation.Id, GenericRead, FileShareRead | FileShareWrite, IntPtr.Zero, OpenExisting, FileFlagOverlapped, IntPtr.Zero);
+            if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows could not open this HID collection for reading.");
+
             try
             {
-                var status = HidP_GetCaps(preparsed, out caps);
-                if (status != HidpStatusSuccess) throw new InvalidOperationException($"Windows HID parser returned status 0x{status:X8}.");
-            }
-            finally { HidD_FreePreparsedData(preparsed); }
+                var attributes = new HidAttributes { Size = (uint)Marshal.SizeOf<HidAttributes>() };
+                if (!HidD_GetAttributes(handle, ref attributes)) throw new Win32Exception(Marshal.GetLastWin32Error(), "HID attributes were not available.");
+                if (!HidD_GetPreparsedData(handle, out var preparsed)) throw new Win32Exception(Marshal.GetLastWin32Error(), "The HID report descriptor could not be read.");
 
-            if (caps.InputReportByteLength == 0) throw new InvalidOperationException("This HID collection has no input reports.");
-            var metadata = new HidCaptureMetadata(attributes.VendorId, attributes.ProductId, attributes.VersionNumber, caps.UsagePage,
-                caps.Usage, caps.InputReportByteLength, deviceInformation.Name, deviceInformation.Id,
-                caps.OutputReportByteLength, caps.FeatureReportByteLength);
-            Metadata = metadata;
-            lock (_sync) _reports.Clear();
-            _captureCancellation = new CancellationTokenSource();
-            _stream = new FileStream(handle, FileAccess.Read, Math.Max((int)caps.InputReportByteLength, 64), isAsync: true);
-            Volatile.Write(ref _isCapturing, 1);
-            _captureTask = CaptureLoopAsync(_stream, caps.InputReportByteLength, _captureCancellation.Token);
-            CaptureStateChanged?.Invoke(true);
-            return Task.FromResult(metadata);
-        }
-        catch
-        {
-            handle.Dispose();
-            throw;
+                HidpCaps caps;
+                try
+                {
+                    var status = HidP_GetCaps(preparsed, out caps);
+                    if (status != HidpStatusSuccess) throw new InvalidOperationException($"Windows HID parser returned status 0x{status:X8}.");
+                }
+                finally { HidD_FreePreparsedData(preparsed); }
+
+                if (caps.InputReportByteLength == 0) throw new InvalidOperationException("This HID collection has no input reports.");
+                var metadata = new HidCaptureMetadata(attributes.VendorId, attributes.ProductId, attributes.VersionNumber, caps.UsagePage,
+                    caps.Usage, caps.InputReportByteLength, deviceInformation.Name, deviceInformation.Id,
+                    caps.OutputReportByteLength, caps.FeatureReportByteLength);
+                Metadata = metadata;
+                lock (_sync) _reports.Clear();
+                _captureCancellation = new CancellationTokenSource();
+                _stream = new FileStream(handle, FileAccess.Read, Math.Max((int)caps.InputReportByteLength, 64), isAsync: true);
+                Volatile.Write(ref _isCapturing, 1);
+                _captureTask = CaptureLoopAsync(_stream, caps.InputReportByteLength, _captureCancellation.Token);
+                CaptureStateChanged?.Invoke(true);
+                return Task.FromResult(metadata);
+            }
+            catch
+            {
+                handle.Dispose();
+                throw;
+            }
         }
     }
 
@@ -163,15 +166,18 @@ public sealed class HidReportCaptureService : IDisposable
 
     public void Stop()
     {
-        var cancellation = _captureCancellation;
-        _captureCancellation = null;
-        cancellation?.Cancel();
-        _stream?.Dispose();
-        _stream = null;
-        Volatile.Write(ref _isCapturing, 0);
-        cancellation?.Dispose();
-        _captureTask = null;
-        CaptureStateChanged?.Invoke(false);
+        lock (_sync)
+        {
+            var cancellation = _captureCancellation;
+            _captureCancellation = null;
+            cancellation?.Cancel();
+            _stream?.Dispose();
+            _stream = null;
+            Volatile.Write(ref _isCapturing, 0);
+            cancellation?.Dispose();
+            _captureTask = null;
+            CaptureStateChanged?.Invoke(false);
+        }
     }
 
     public void Dispose()

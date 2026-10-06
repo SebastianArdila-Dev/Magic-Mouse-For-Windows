@@ -1,6 +1,9 @@
 namespace MagicMouse.Core.Touch;
 
-public sealed record AppleMouseReport(TouchFrame Frame, int Buttons, int DeltaX, int DeltaY);
+public sealed record AppleMouseReport(TouchFrame Frame, int Buttons, int DeltaX, int DeltaY)
+{
+    public bool HasTouchData { get; init; } = true;
+}
 
 /// <summary>Strict decoder of the documented 0x29/0x12 mouse wire layouts, not trackpad reports.</summary>
 public static class AppleMouseReportParser
@@ -33,7 +36,7 @@ public static class AppleMouseReportParser
             var y = -Signed(record[1] >> 4 | record[2] << 4, 12);
             contacts.Add(new(id, Math.Clamp((x + 1100.0) / 2358, 0, 1), Math.Clamp((y + 1589.0) / 3636, 0, 1)));
         }
-        result = new(new(timestamp, contacts), buttons, dx, dy); return true;
+        result = new(new(timestamp, contacts), buttons, dx, dy) { HasTouchData = !(bytes[0] == 0x12 && bytes.Length == 8) }; return true;
     }
     private static int Signed(int value, int bits) => (value & (1 << (bits - 1))) != 0 ? value - (1 << bits) : value;
 }

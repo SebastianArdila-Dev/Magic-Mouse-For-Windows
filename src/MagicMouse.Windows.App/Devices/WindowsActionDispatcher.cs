@@ -7,6 +7,8 @@ namespace MagicMouse.Windows.App.Devices;
 internal sealed class WindowsActionDispatcher
 {
     private readonly HashSet<IntPtr> _zoomed = [];
+    private readonly ScrollWheelAccumulator _wheel = new();
+    public void ResetScroll() => _wheel.Reset();
     public void Dispatch(string action)
     {
         var window = GetForegroundWindow();
@@ -14,7 +16,7 @@ internal sealed class WindowsActionDispatcher
         if (action == "Minimizar") { ShowWindow(window, 6); return; }
         if (action == "Maximizar/restaurar") { ShowWindow(window, IsZoomed(window) ? 9 : 3); return; }
         if (action is "Clic principal" or "Clic secundario" or "Clic central")
-        { var flags = action switch { "Clic principal" => (2u,4u), "Clic secundario" => (8u,16u), _ => (32u,64u) }; Send([Mouse(flags.Item1), Mouse(flags.Item2)]); return; }
+        { var swapped = GetSystemMetrics(23) != 0; var flags = action switch { "Clic principal" => swapped ? (8u,16u) : (2u,4u), "Clic secundario" => swapped ? (2u,4u) : (8u,16u), _ => (32u,64u) }; Send([Mouse(flags.Item1), Mouse(flags.Item2)]); return; }
         if (action == "Zoom inteligente")
         {
             if (_zoomed.Contains(window)) { Chord(WindowsActionPlan.Keys("Restablecer zoom")); _zoomed.Remove(window); }
@@ -25,9 +27,10 @@ internal sealed class WindowsActionDispatcher
     }
     public void Scroll(double horizontal, double vertical)
     {
+        var delta = _wheel.Add(horizontal, vertical);
         var inputs = new List<Input>();
-        if (vertical != 0) inputs.Add(Mouse(0x0800, unchecked((uint)(int)Math.Round(-vertical * 1200))));
-        if (horizontal != 0) inputs.Add(Mouse(0x1000, unchecked((uint)(int)Math.Round(horizontal * 1200))));
+        if (delta.Vertical != 0) inputs.Add(Mouse(0x0800, unchecked((uint)delta.Vertical)));
+        if (delta.Horizontal != 0) inputs.Add(Mouse(0x1000, unchecked((uint)delta.Horizontal)));
         if (inputs.Count > 0) Send(inputs.ToArray());
     }
     private static void Chord(ushort[] keys)
@@ -39,12 +42,24 @@ internal sealed class WindowsActionDispatcher
     private static Input Key(ushort key, bool up) => new() { Type = 1, Data = new() { Keyboard = new() { Key = key, Flags = (up ? 2u : 0) | (key is 0x25 or 0x27 or 0x5B or >= 0xA6 and <= 0xB3 ? 1u : 0) } } };
     private static Input Mouse(uint flags, uint data = 0) => new() { Type = 0, Data = new() { Mouse = new() { Flags = flags, MouseData = data } } };
     private static void Send(Input[] inputs)
-    { if (SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>()) != inputs.Length) throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows bloqueó la acción. Las ventanas elevadas o el escritorio seguro pueden impedir la entrada."); }
+    {
+        var sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
+        if (sent == inputs.Length) return;
+        var error = Marshal.GetLastWin32Error();
+        // If Windows accepts only part of a chord/click, release input owned by this action.
+        if (sent > 0)
+        {
+            var releases = inputs.Where(input => input.Type == 1 ? (input.Data.Keyboard.Flags & 2) != 0 : (input.Data.Mouse.Flags & (4u | 16u | 64u)) != 0).ToArray();
+            if (releases.Length > 0) SendInput((uint)releases.Length, releases, Marshal.SizeOf<Input>());
+        }
+        throw new Win32Exception(error, "Windows bloqueó la acción. Las ventanas elevadas o el escritorio seguro pueden impedir la entrada.");
+    }
     [StructLayout(LayoutKind.Sequential)] private struct Input { public uint Type; public InputUnion Data; }
     [StructLayout(LayoutKind.Explicit)] private struct InputUnion { [FieldOffset(0)] public MouseInput Mouse; [FieldOffset(0)] public KeyboardInput Keyboard; }
     [StructLayout(LayoutKind.Sequential)] private struct MouseInput { public int X, Y; public uint MouseData, Flags, Time; public UIntPtr Extra; }
     [StructLayout(LayoutKind.Sequential)] private struct KeyboardInput { public ushort Key, Scan; public uint Flags, Time; public UIntPtr Extra; }
     [DllImport("user32.dll", SetLastError = true)] private static extern uint SendInput(uint count, Input[] inputs, int size);
+    [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool ShowWindow(IntPtr window, int command);

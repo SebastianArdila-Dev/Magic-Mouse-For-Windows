@@ -666,7 +666,17 @@ public sealed partial class MainWindow : Window
         if (mouse is not null) _ = LogAsync($"Magic Mouse HID candidate discovered: {mouse.Name}");
     }
 
-    private async Task StartHidCaptureAsync()
+    private readonly SemaphoreSlim _captureStartGate = new(1, 1);
+    private Task StartHidCaptureAsync() => StartHidCaptureCoreAsync(false);
+
+    private async Task StartHidCaptureCoreAsync(bool requireTouchReports)
+    {
+        await _captureStartGate.WaitAsync();
+        try { if (!_closed) await StartHidCaptureAttemptAsync(requireTouchReports); }
+        finally { _captureStartGate.Release(); }
+    }
+
+    private async Task StartHidCaptureAttemptAsync(bool requireTouchReports)
     {
         if (_currentMouseDevice is null)
         {
@@ -676,13 +686,26 @@ public sealed partial class MainWindow : Window
         try
         {
             _capture.Dispose();
-            _capture = new HidReportCaptureService();
-            AttachCaptureEvents(_capture);
+
             HidCaptureMetadata? metadata = null; Exception? lastFailure = null;
             foreach (var candidate in _discovery.Candidates.Prepend(_currentMouseDevice).DistinctBy(device => device.Id))
             {
-                try { metadata = await _capture.StartAsync(candidate); break; }
-                catch(Exception exception) { lastFailure = exception; }
+                if (_closed) return;
+                _capture.Dispose();
+                var source = _capture = new HidReportCaptureService();
+                AttachCaptureEvents(source);
+                try
+                {
+                    metadata = await Task.Run(async () =>
+                    {
+                        var opened = await source.StartAsync(candidate);
+                        if (requireTouchReports) source.RequestTouchReports();
+                        return opened;
+                    });
+                    if (_closed || !ReferenceEquals(source, _capture)) { source.Dispose(); return; }
+                    break;
+                }
+                catch(Exception exception) { metadata = null; lastFailure = exception; source.Dispose(); }
             }
             if (metadata is null) throw new InvalidOperationException("Windows no permitió leer las colecciones disponibles del Magic Mouse. Las colecciones mouse son exclusivas del controlador; la lectura táctil requiere una colección accesible o un controlador compatible.",lastFailure);
             if (_captureSummary is not null) _captureSummary.Text = $"VID {metadata.VendorId:X4} · PID {metadata.ProductId:X4} · Usage {metadata.UsagePage:X4}:{metadata.UsageId:X4}\n{CaptureDescription()}";
