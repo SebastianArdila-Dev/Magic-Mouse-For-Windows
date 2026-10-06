@@ -11,7 +11,7 @@ Este código es un prototipo para revisión y pruebas. Compilar un archivo SYS n
 - INF de extensión limitado a los identificadores Bluetooth Apple de los modelos 030D, 0269 y 0323; no hay filtro global de clase Mouse.
 - Comprueba también VID/PID en ejecución. Un dispositivo desconocido no activa comandos táctiles.
 - Añade una colección opaca al descriptor para ampliar el buffer de lectura del transporte. Copia los reportes táctiles en un anillo acotado de 64 entradas.
-- Reconstruye movimiento y botones con el descriptor nativo original mediante HidP. Solo permite activar el modo táctil si reconoce un formato de mouse relativo firmado de al menos 16 bits en X/Y y botones principal/secundario.
+- Reconstruye movimiento y botones con el descriptor nativo original mediante HidP. Solo permite activar el modo táctil si reconoce un formato de mouse relativo firmado de 16 bits y rango -32768..32767 en X/Y y botones principal/secundario.
 - Los descriptores con ejes de 8 bits se rechazan por ahora; la declaración del identificador 030D no implica compatibilidad táctil completa con Magic Mouse 1.
 - PDO raw independiente y exclusivo, con acceso reservado a administradores/SYSTEM para las pruebas. La seguridad de un servicio intermediario para uso sin elevación queda pendiente.
 - IOCTLs limitados a identidad, lectura de reportes y un comando de activación fijo. No acepta direcciones ni comandos HID arbitrarios del usuario.
@@ -39,6 +39,8 @@ Los paquetes SDK y WDK de Microsoft están fijados a 10.0.26100.1. GitHub Action
 5. Driver Verifier: Special Pool, I/O verification, Force IRQL Checking, deadlock detection y KMDF Verifier. Realizar pruebas de estrés y retirada mientras hay solicitudes pendientes.
 6. Resolver los límites de movimiento de Magic Mouse 1 y la seguridad/servicio para la app sin privilegios.
 7. Preparar catálogo, pruebas HLK y firma mediante Microsoft antes de integrar la instalación. No se desactiva Secure Boot ni la comprobación de firmas desde la app.
+
+La matriz de aceptación está en [VALIDATION.md](VALIDATION.md). El flujo también ejecuta pruebas C de los tamaños y modelos admitidos; abrir una sesión limpia la cola y marca la discontinuidad inicial.
 
 ## Referencias
 
