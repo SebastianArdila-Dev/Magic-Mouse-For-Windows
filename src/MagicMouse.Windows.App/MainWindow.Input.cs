@@ -121,7 +121,7 @@ public sealed partial class MainWindow
         {
             var now = DateTimeOffset.UtcNow; var elapsed = now - _lastInputTick; _lastInputTick = now;
             // Silence or motion-only packets must not leave a stale touch active indefinitely.
-            if (_previousTouch is { Contacts.Count: > 0 } && now - _lastTouchAt > TimeSpan.FromMilliseconds(250))
+            if (_previousTouch is { Contacts.Count: > 0 } && now - _lastTouchAt > TimeSpan.FromSeconds(2))
             {
                 ResetInputEngine(); return;
             }
