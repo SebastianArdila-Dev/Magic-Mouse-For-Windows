@@ -20,6 +20,8 @@ if ($inf -notmatch 'DriverVer=\d+/\d+/\d+,0\.1\.2\.0' -or $inf -notmatch 'Catalo
 if ($LASTEXITCODE -ne 0) { throw 'Kernel signing policy verification failed. No distribution created.' }
 & $signTool verify /pa /v (Join-Path $package $names[2])
 if ($LASTEXITCODE -ne 0) { throw 'Catalog signature verification failed. No distribution created.' }
+& $signTool verify /pa /v /c (Join-Path $package $names[2]) (Join-Path $package $names[0])
+if ($LASTEXITCODE -ne 0) { throw 'INF catalog membership verification failed. No distribution created.' }
 $output = [IO.Path]::GetFullPath($OutputDirectory)
 $destination = Join-Path $output 'Magic Mouse Bridge x64 0.1.2.zip'
 if (Test-Path -LiteralPath $destination) { throw 'Destination already exists; choose a new output directory.' }
