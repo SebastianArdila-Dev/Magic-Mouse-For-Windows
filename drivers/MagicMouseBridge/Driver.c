@@ -8,6 +8,7 @@
 #include <devpkey.h>
 #include "Protocol.h"
 #include "ReportValidation.h"
+#include "DescriptorValidation.h"
 
 /* A private interface on a raw child PDO, never the global mouse device class. */
 DEFINE_GUID(GUID_DEVINTERFACE_MAGIC_MOUSE_BRIDGE, 0x5e3f432c,0x47c6,0x4c64,0x9b,0x77,0x8c,0x8a,0xa1,0x3d,0x9e,0xf2);
@@ -25,6 +26,7 @@ typedef struct _BRIDGE_CONTEXT {
     UCHAR MouseReportId;
     USHORT MouseLength, XLink, YLink, ButtonLink;
     BOOLEAN MouseReady;
+    BOOLEAN MirrorReady, MirrorAdvertised;
     MM_BRIDGE_INFO Info;
     MM_BRIDGE_PACKET Ring[MM_BRIDGE_RING_SIZE];
     ULONG Head, Count;
@@ -51,9 +53,9 @@ EVT_WDF_FILE_CLEANUP BridgeFileCleanup;
 /* This opaque vendor collection increases the shared transport read buffer. Native mouse
    reports are still reconstructed using the original, unmodified preparsed descriptor. */
 static const UCHAR MirrorDescriptor[] = {
-    0x06,0x00,0xFF, 0x09,0x01, 0xA1,0x01, 0x85,0x7F,
+    0xA4, 0x06,0x00,0xFF, 0x09,0x01, 0xA1,0x01, 0x85,0x7F,
     0x15,0x00, 0x26,0xFF,0x00, 0x75,0x08, 0x95,0xA0,
-    0x09,0x01, 0x81,0x02, 0xC0
+    0x09,0x01, 0x81,0x02, 0xC0, 0xB4
 };
 
 C_ASSERT(sizeof(MM_BRIDGE_PACKET) == 200);
@@ -141,10 +143,11 @@ static VOID InitialiseNativeMouse(WDFDEVICE device)
     bytes = ExAllocatePool2(POOL_FLAG_NON_PAGED, descriptor.DescriptorList[0].wReportLength, 'dBMM');
     if (bytes == NULL) return;
     status = TransportRequest(device, IOCTL_HID_GET_REPORT_DESCRIPTOR, bytes, descriptor.DescriptorList[0].wReportLength, FALSE);
-    if (NT_SUCCESS(status)) status = HidP_GetCollectionDescription(bytes, descriptor.DescriptorList[0].wReportLength,
+    if (NT_SUCCESS(status)) ctx->MirrorReady = CanExtendDescriptor(bytes, descriptor.DescriptorList[0].wReportLength) != 0;
+    if (NT_SUCCESS(status) && ctx->MirrorReady) status = HidP_GetCollectionDescription(bytes, descriptor.DescriptorList[0].wReportLength,
         NonPagedPoolNx, &ctx->Parsed);
     ExFreePoolWithTag(bytes, 'dBMM');
-    if (!NT_SUCCESS(status)) return;
+    if (!NT_SUCCESS(status) || !ctx->MirrorReady) return;
     for (index = 0; index < ctx->Parsed.CollectionDescLength; ++index) {
         HIDP_COLLECTION_DESC *collection = &ctx->Parsed.CollectionDesc[index];
         HIDP_CAPS caps;
@@ -163,7 +166,7 @@ static VOID InitialiseNativeMouse(WDFDEVICE device)
             if (values[i].BitSize != 16 || values[i].LogicalMin != -32768 || values[i].LogicalMax != 32767) continue;
             if (values[i].NotRange.Usage == 0x30) { report = values[i].ReportID; ctx->XLink = values[i].LinkCollection; x = TRUE; }
         }
-        if (!x) continue;
+        if (!x || report == 0) continue;
         for (i = 0; i < nvalues; ++i) {
             if (values[i].UsagePage == 1 && !values[i].IsRange && !values[i].IsAbsolute &&
                 values[i].BitSize == 16 && values[i].LogicalMin == -32768 && values[i].LogicalMax == 32767 && values[i].NotRange.Usage == 0x31 && values[i].ReportID == report) {
@@ -322,17 +325,21 @@ VOID BridgeDescriptorComplete(WDFREQUEST request, WDFIOTARGET target, PWDF_REQUE
     PIRP irp = WdfRequestWdmGetIrp(request);
     WDF_REQUEST_PARAMETERS original;
     ULONG_PTR size = params->IoStatus.Information;
-    UNREFERENCED_PARAMETER(target); UNREFERENCED_PARAMETER(context);
+    BRIDGE_CONTEXT *ctx = BridgeContext((WDFDEVICE)context);
+    UNREFERENCED_PARAMETER(target);
     WDF_REQUEST_PARAMETERS_INIT(&original); WdfRequestGetParameters(request, &original);
-    if (NT_SUCCESS(params->IoStatus.Status) && irp->UserBuffer != NULL) {
+    if (ctx->MirrorReady && NT_SUCCESS(params->IoStatus.Status) && irp->UserBuffer != NULL &&
+        size <= original.Parameters.DeviceIoControl.OutputBufferLength) {
         if (original.Parameters.DeviceIoControl.IoControlCode == IOCTL_HID_GET_DEVICE_DESCRIPTOR && size >= sizeof(HID_DESCRIPTOR)) {
             HID_DESCRIPTOR *descriptor = (HID_DESCRIPTOR *)irp->UserBuffer;
-            if (descriptor->bNumDescriptors == 1 && descriptor->DescriptorList[0].wReportLength <= 4096)
+            if (descriptor->bNumDescriptors == 1 && descriptor->DescriptorList[0].wReportLength > 0 && descriptor->DescriptorList[0].wReportLength <= 4096)
                 descriptor->DescriptorList[0].wReportLength += (USHORT)sizeof(MirrorDescriptor);
         } else if (original.Parameters.DeviceIoControl.IoControlCode == IOCTL_HID_GET_REPORT_DESCRIPTOR && size <= 4096 &&
-            size + sizeof(MirrorDescriptor) <= original.Parameters.DeviceIoControl.OutputBufferLength) {
+            size + sizeof(MirrorDescriptor) <= original.Parameters.DeviceIoControl.OutputBufferLength &&
+            CanExtendDescriptor((const UCHAR *)irp->UserBuffer, (ULONG)size)) {
             RtlCopyMemory((PUCHAR)irp->UserBuffer + size, MirrorDescriptor, sizeof(MirrorDescriptor));
             size += sizeof(MirrorDescriptor);
+            WdfSpinLockAcquire(ctx->Lock); ctx->MirrorAdvertised = TRUE; WdfSpinLockRelease(ctx->Lock);
         }
     }
     WdfRequestCompleteWithInformation(request, params->IoStatus.Status, size);
@@ -443,12 +450,12 @@ VOID BridgeClientIoctl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, 
         }
     } else if (code == IOCTL_MM_BRIDGE_ENABLE_TOUCH) {
         USHORT product;
-        BOOLEAN verified;
+        BOOLEAN verified, advertised;
         UCHAR command[3] = { 0xF1, 0x02, 0x01 };
         HID_XFER_PACKET packet;
-        WdfSpinLockAcquire(ctx->Lock); verified = ctx->Verified; product = ctx->Identity.ProductID; WdfSpinLockRelease(ctx->Lock);
+        WdfSpinLockAcquire(ctx->Lock); verified = ctx->Verified; advertised = ctx->MirrorAdvertised; product = ctx->Identity.ProductID; WdfSpinLockRelease(ctx->Lock);
         if (!verified) status = STATUS_DEVICE_NOT_READY;
-        else if (!ctx->MouseReady) status = STATUS_NOT_SUPPORTED;
+        else if (!ctx->MouseReady || !ctx->MirrorReady || !advertised) status = STATUS_NOT_SUPPORTED;
         else {
             if (product == 0x030D) { command[0] = 0xD7; command[1] = 0x01; }
             packet.reportId = command[0]; packet.reportBuffer = command;

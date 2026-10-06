@@ -33,6 +33,10 @@ jobs:
           New-Item -ItemType Directory -Force artifacts/native-tests | Out-Null
           cl /nologo /W4 /WX drivers/tests/ReportValidationTests.c /Foartifacts/native-tests/ /Feartifacts/native-tests/ReportValidationTests.exe
           if ($LASTEXITCODE -ne 0) { throw "Native tests failed to compile" }
+          cl /nologo /W4 /WX drivers/tests/DescriptorValidationTests.c /Foartifacts/native-tests/ /Feartifacts/native-tests/DescriptorValidationTests.exe
+          if ($LASTEXITCODE -ne 0) { throw "Descriptor tests failed to compile" }
+          & ./artifacts/native-tests/DescriptorValidationTests.exe
+          if ($LASTEXITCODE -ne 0) { throw "Invalid descriptor validation" }
           & ./artifacts/native-tests/ReportValidationTests.exe
           if ($LASTEXITCODE -ne 0) { throw "Invalid native report validation" }
       - name: Build KMDF x64
