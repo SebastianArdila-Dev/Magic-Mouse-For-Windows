@@ -5,6 +5,7 @@
 #include <wdmsec.h>
 #include <ntstrsafe.h>
 #include <initguid.h>
+#include <devpkey.h>
 #include "Protocol.h"
 
 /* A private interface on a raw child PDO, never the global mouse device class. */
@@ -143,8 +144,8 @@ static VOID InitialiseNativeMouse(WDFDEVICE device)
     for (index = 0; index < ctx->Parsed.CollectionDescLength; ++index) {
         HIDP_COLLECTION_DESC *collection = &ctx->Parsed.CollectionDesc[index];
         HIDP_CAPS caps;
-        HIDP_VALUE_CAPS values[32];
-        HIDP_BUTTON_CAPS buttons[16];
+        HIDP_VALUE_CAPS values[16];
+        HIDP_BUTTON_CAPS buttons[8];
         USHORT nvalues = RTL_NUMBER_OF(values), nbuttons = RTL_NUMBER_OF(buttons), i;
         PHIDP_PREPARSED_DATA parsed = collection->PreparsedData;
         BOOLEAN x = FALSE, y = FALSE, button = FALSE;
@@ -266,14 +267,8 @@ NTSTATUS BridgeD0Entry(WDFDEVICE device, WDF_POWER_DEVICE_STATE previous)
     ctx->Verified = NT_SUCCESS(status) && Recognised(identity.VendorID, identity.ProductID);
     ctx->Identity = identity; ctx->Enabled = FALSE;
     ctx->Head = ctx->Count = 0; ctx->Dropped = TRUE;
-    RtlZeroMemory(&ctx->Info, sizeof(ctx->Info));
-    ctx->Info.Magic = MM_BRIDGE_MAGIC; ctx->Info.Version = MM_BRIDGE_VERSION;
-    ctx->Info.VendorId = identity.VendorID; ctx->Info.ProductId = identity.ProductID;
-    ctx->Info.Firmware = identity.VersionNumber;
+    ctx->Info = info;
     WdfSpinLockRelease(ctx->Lock);
-    status = WdfDeviceQueryProperty(device, DevicePropertyDeviceInstanceId,
-        sizeof(ctx->Info.InstanceId), ctx->Info.InstanceId, &bytes);
-    if (!NT_SUCCESS(status)) ctx->Info.InstanceId[0] = 0;
     /* Passthrough remains operational even when identity/feature requests are unsupported. */
     return STATUS_SUCCESS;
 }
