@@ -11,6 +11,7 @@ Este código es un prototipo para revisión y pruebas. Compilar un archivo SYS n
 - INF de extensión limitado a los identificadores Bluetooth Apple de los modelos 030D, 0269 y 0323; no hay filtro global de clase Mouse.
 - Comprueba también VID/PID en ejecución. Un dispositivo desconocido no activa comandos táctiles.
 - Añade una colección opaca al descriptor para ampliar el buffer de lectura del transporte. Copia los reportes táctiles en un anillo acotado de 64 entradas.
+- Antes de ampliar comprueba el recorrido de los items HID, rechaza colisiones con 7F, reportes sin numerar y estructuras incompletas. La colección añadida conserva los globales con Push/Pop. No activa la superficie si el descriptor ampliado no se ha entregado correctamente a Windows.
 - Reconstruye movimiento y botones con el descriptor nativo original mediante HidP. Solo permite activar el modo táctil si reconoce un formato de mouse relativo firmado de 16 bits y rango -32768..32767 en X/Y y botones principal/secundario.
 - Los descriptores con ejes de 8 bits se rechazan por ahora; la declaración del identificador 030D no implica compatibilidad táctil completa con Magic Mouse 1.
 - PDO raw independiente y exclusivo: SYSTEM y administradores tienen acceso completo; usuarios interactivos tienen acceso de lectura para los tres IOCTLs acotados. Se deniega el acceso de red y se rechazan rutas secundarias. No se requiere elevar la app ni ejecutar un servicio privilegiado. Esta política todavía requiere validación física y de seguridad con distintas cuentas.
@@ -52,4 +53,4 @@ La matriz de aceptación está en [VALIDATION.md](VALIDATION.md). El flujo tambi
 
 ## Preparar una distribución firmada
 
-Tras recibir el paquete firmado, ejecutar Prepare-Distribution.ps1 indicando el directorio, SignTool oficial y un directorio de salida nuevo. Verifica la política de firma kernel, la firma del catálogo y la versión antes de generar un ZIP con solo INF, SYS y CAT. Un paquete sin firma válida no genera distribución. La verificación de firma no sustituye la matriz física y no publica ni instala archivos automáticamente.
+Tras recibir el paquete firmado, ejecutar Prepare-Distribution.ps1 indicando el directorio, SignTool oficial y un directorio de salida nuevo. Comprueba imagen PE x64, versión, política de firma kernel y firmas/pertenencia del SYS y del INF al catálogo antes de generar un ZIP con solo INF, SYS y CAT. El flujo comprueba con SignTool real que el artefacto sin firma no genera distribución. La verificación de firma no sustituye la matriz física y no publica ni instala archivos automáticamente.

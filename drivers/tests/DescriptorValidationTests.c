@@ -8,11 +8,17 @@ int main(void)
     unsigned char copy[sizeof(good)];
     const unsigned char pop[] = {0xB4};
     const unsigned char longItem[] = {0xFE,0,0};
+    const unsigned char balanced[] = {0xA1,1,0x85,1,0xA4,0x85,2,0x81,2,0xB4,0x81,2,0xC0};
+    const unsigned char unnumbered[] = {0xA1,1,0x81,2,0xC0};
+    const unsigned char truncated[] = {0xA1,1,0x85};
     unsigned long i;
     assert(CanExtendDescriptor(good, sizeof(good)));
     assert(!CanExtendDescriptor(0, sizeof(good)));
     assert(!CanExtendDescriptor(pop, sizeof(pop)));
     assert(!CanExtendDescriptor(longItem, sizeof(longItem)));
+    assert(CanExtendDescriptor(balanced, sizeof(balanced)));
+    assert(!CanExtendDescriptor(unnumbered, sizeof(unnumbered)));
+    assert(!CanExtendDescriptor(truncated, sizeof(truncated)));
     for (i = 0; i < sizeof(good); ++i) assert(!CanExtendDescriptor(good, i));
     memcpy(copy, good, sizeof(good)); copy[7] = 0x7F;
     assert(!CanExtendDescriptor(copy, sizeof(copy)));
