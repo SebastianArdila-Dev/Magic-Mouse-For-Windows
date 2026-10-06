@@ -18,7 +18,17 @@ jobs:
         run: nuget restore drivers/packages.config -PackagesDirectory drivers/packages -NonInteractive
       - name: Build KMDF x64
         run: msbuild drivers/MagicMouseBridge/MagicMouseBridge.vcxproj /p:Configuration=Release /p:Platform=x64 /p:SignMode=Off /m
+      - name: Validate extension INF
+        shell: pwsh
+        run: |
+          Copy-Item drivers/MagicMouseBridge/MagicMouseBridge.inf artifacts/driver/
+          $verifier = Get-ChildItem drivers/packages/Microsoft.Windows.WDK.x64.10.0.26100.1 -Recurse -Filter InfVerif.exe | Select-Object -First 1
+          if (!$verifier) { throw "InfVerif no disponible" }
+          & $verifier.FullName /w artifacts/driver/MagicMouseBridge.inf
+          if ($LASTEXITCODE -ne 0) { throw "INF no válido" }
       - uses: actions/upload-artifact@v4
         with:
           name: MagicMouseBridge-experimental-unsigned-x64
-          path: artifacts/driver/*.sys
+          path: |
+            artifacts/driver/*.sys
+            artifacts/driver/*.inf
