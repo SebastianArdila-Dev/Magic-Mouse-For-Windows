@@ -1,0 +1,53 @@
+; Experimental Bluetooth transport filter. Do not install on a daily-use machine.
+[Version]
+Signature="$WINDOWS NT$"
+Class=Extension
+ClassGuid={e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+ExtensionId={a529fb57-8dd4-4bd6-a48e-9227fb9e6224}
+Provider=%Provider%
+DriverVer=10/05/2026,0.1.2.0
+CatalogFile=MagicMouseBridge.cat
+PnpLockdown=1
+
+[Manufacturer]
+%Provider%=Models,NTamd64.10.0...19041
+
+[Models.NTamd64.10.0...19041]
+%Device%=BridgeInstall,BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&0001004C_PID&030D
+%Device%=BridgeInstall,BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&0001004C_PID&0269
+%Device%=BridgeInstall,BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&0001004C_PID&0323
+%Device%=BridgeInstall,BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&000205AC_PID&030D
+%Device%=BridgeInstall,BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&000205AC_PID&0269
+%Device%=BridgeInstall,BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&000205AC_PID&0323
+
+[BridgeInstall.NT]
+CopyFiles=BridgeFiles
+[BridgeInstall.NT.Services]
+AddService=MagicMouseBridge,0,BridgeService
+[BridgeInstall.NT.Wdf]
+KmdfService=MagicMouseBridge,BridgeFramework
+[BridgeInstall.NT.Filters]
+AddFilter=MagicMouseBridge,,BridgePosition
+[BridgePosition]
+FilterPosition=Lower
+[BridgeService]
+DisplayName=%Service%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\MagicMouseBridge.sys
+[BridgeFramework]
+KmdfLibraryVersion=1.15
+[DestinationDirs]
+BridgeFiles=13
+[BridgeFiles]
+MagicMouseBridge.sys
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MagicMouseBridge.sys=1
+[Strings]
+Provider="Sebastian Ardila"
+Device="Magic Mouse Bridge (experimental)"
+Service="Magic Mouse Bridge"
+Disk="Magic Mouse Bridge development package"

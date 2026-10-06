@@ -18,7 +18,7 @@ public sealed record HidCaptureMetadata(
     ushort OutputReportByteLength,
     ushort FeatureReportByteLength);
 
-public sealed record HidReportSnapshot(DateTimeOffset Timestamp, byte ReportId, int Length, string BytesHex);
+public sealed record HidReportSnapshot(DateTimeOffset Timestamp, byte ReportId, int Length, string BytesHex, bool Discontinuity = false);
 
 /// <summary>Opt-in local capture of raw input reports from an accessible HID collection.</summary>
 public sealed class HidReportCaptureService : IDisposable
@@ -32,6 +32,7 @@ public sealed class HidReportCaptureService : IDisposable
     private readonly object _sync = new();
     private readonly List<HidReportSnapshot> _reports = [];
     private FileStream? _stream;
+    private DriverBridgeClient? _bridge;
     private CancellationTokenSource? _captureCancellation;
     private Task? _captureTask;
     private int _disposed;
@@ -100,6 +101,49 @@ public sealed class HidReportCaptureService : IDisposable
         }
     }
 
+    public async Task<HidCaptureMetadata> StartBridgeAsync(DeviceInformation deviceInformation)
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        var bridge = await DriverBridgeClient.OpenForDeviceAsync(deviceInformation);
+        lock (_sync)
+        {
+            if (Volatile.Read(ref _disposed) != 0 || _stream is not null || _bridge is not null) { bridge.Dispose(); throw new InvalidOperationException("La captura no está disponible."); }
+            _bridge = bridge; _reports.Clear(); _captureCancellation = new CancellationTokenSource();
+            Metadata = new(bridge.Info.VendorId, bridge.Info.ProductId, bridge.Info.Firmware, 0xFF00, 1, 160,
+                deviceInformation.Name, bridge.DevicePath, 0, 3);
+            Volatile.Write(ref _isCapturing, 1);
+            _captureTask = CaptureBridgeLoopAsync(bridge, _captureCancellation.Token);
+            CaptureStateChanged?.Invoke(true);
+            return Metadata;
+        }
+    }
+
+    private async Task CaptureBridgeLoopAsync(DriverBridgeClient bridge, CancellationToken cancellation)
+    {
+        var sequence = new MagicMouse.Core.Drivers.DriverBridgeSequence();
+        try
+        {
+            while (!cancellation.IsCancellationRequested)
+            {
+                var packet = bridge.Read();
+                if (packet is null) { await Task.Delay(8, cancellation); continue; }
+                if (!sequence.Accept(packet.Sequence, packet.Discontinuity, out var discontinuity))
+                    throw new InvalidDataException("El puente devolvió una secuencia de reportes repetida o fuera de orden.");
+                var snapshot = new HidReportSnapshot(packet.Timestamp, packet.Report[0], packet.Report.Length, Convert.ToHexString(packet.Report),
+                    discontinuity);
+                lock (_sync) { _reports.Add(snapshot); if (_reports.Count > 5000) _reports.RemoveRange(0, _reports.Count - 5000); }
+                ReportReceived?.Invoke(snapshot);
+            }
+        }
+        catch (Exception) when (cancellation.IsCancellationRequested) { }
+        catch (Exception exception) { CaptureFailed?.Invoke(exception); }
+        finally
+        {
+            if (ReferenceEquals(Interlocked.CompareExchange(ref _bridge, null, bridge), bridge))
+            { bridge.Dispose(); Volatile.Write(ref _isCapturing, 0); CaptureStateChanged?.Invoke(false); }
+        }
+    }
+
     public IReadOnlyList<HidReportSnapshot> Snapshot()
     {
         lock (_sync) return _reports.ToArray();
@@ -107,6 +151,7 @@ public sealed class HidReportCaptureService : IDisposable
 
     public void RequestTouchReports()
     {
+        if (_bridge is { } bridge) { bridge.EnableTouch(); return; }
         var metadata = Metadata ?? throw new InvalidOperationException("Primero inicia la lectura HID.");
         if (metadata.VendorId is not (0x05AC or 0x004C) || metadata.ProductId is not (0x030D or 0x0269 or 0x0323))
             throw new InvalidOperationException("No se enviarán comandos a un dispositivo no reconocido.");
@@ -172,7 +217,7 @@ public sealed class HidReportCaptureService : IDisposable
             _captureCancellation = null;
             cancellation?.Cancel();
             _stream?.Dispose();
-            _stream = null;
+            _stream = null; _bridge?.Dispose(); _bridge = null;
             Volatile.Write(ref _isCapturing, 0);
             cancellation?.Dispose();
             _captureTask = null;

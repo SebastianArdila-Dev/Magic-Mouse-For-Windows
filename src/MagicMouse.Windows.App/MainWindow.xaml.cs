@@ -698,7 +698,13 @@ public sealed partial class MainWindow : Window
                 {
                     metadata = await Task.Run(async () =>
                     {
-                        var opened = await source.StartAsync(candidate);
+                        HidCaptureMetadata opened;
+                        if (requireTouchReports && _settings.Toggles.GetValueOrDefault("driver.experimental"))
+                        {
+                            try { opened = await source.StartBridgeAsync(candidate); }
+                            catch { opened = await source.StartAsync(candidate); }
+                        }
+                        else opened = await source.StartAsync(candidate);
                         if (requireTouchReports) source.RequestTouchReports();
                         return opened;
                     });

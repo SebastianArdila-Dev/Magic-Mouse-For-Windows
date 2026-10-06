@@ -1,0 +1,80 @@
+name: Experimental driver
+on:
+  push:
+    branches: ['driver/**']
+  pull_request:
+    paths: ['drivers/**', '.github/workflows/driver.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - uses: NuGet/setup-nuget@v2
+      - name: Restore official WDK and SDK
+        run: nuget restore drivers/packages.config -PackagesDirectory drivers/packages -NonInteractive
+      - name: Prepare WDK host tools
+        shell: pwsh
+        run: |
+          $bin = 'drivers/packages/Microsoft.Windows.WDK.x64.10.0.26100.1/c/bin/10.0.26100.0'
+          if (!(Test-Path "$bin/x86/ApiValidator.exe")) {
+            New-Item -ItemType Directory -Force "$bin/x86" | Out-Null
+            Copy-Item "$bin/x64/*" "$bin/x86/" -Recurse -Force
+          }
+      - name: Test native report envelopes
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath
+          Import-Module "$vs/Common7/Tools/Microsoft.VisualStudio.DevShell.dll"
+          Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments '-arch=amd64 -host_arch=amd64'
+          New-Item -ItemType Directory -Force artifacts/native-tests | Out-Null
+          cl /nologo /W4 /WX drivers/tests/ReportValidationTests.c /Foartifacts/native-tests/ /Feartifacts/native-tests/ReportValidationTests.exe
+          if ($LASTEXITCODE -ne 0) { throw "Native tests failed to compile" }
+          cl /nologo /W4 /WX drivers/tests/DescriptorValidationTests.c /Foartifacts/native-tests/ /Feartifacts/native-tests/DescriptorValidationTests.exe
+          if ($LASTEXITCODE -ne 0) { throw "Descriptor tests failed to compile" }
+          & ./artifacts/native-tests/DescriptorValidationTests.exe
+          if ($LASTEXITCODE -ne 0) { throw "Invalid descriptor validation" }
+          & ./artifacts/native-tests/ReportValidationTests.exe
+          if ($LASTEXITCODE -ne 0) { throw "Invalid native report validation" }
+      - name: Build KMDF x64
+        run: msbuild drivers/MagicMouseBridge/MagicMouseBridge.vcxproj /p:Configuration=Release /p:Platform=x64 /p:SignMode=Off /m
+      - name: Validate extension INF
+        shell: pwsh
+        run: |
+          Copy-Item drivers/MagicMouseBridge/MagicMouseBridge.inf artifacts/driver/
+          $verifier = Get-ChildItem drivers/packages/Microsoft.Windows.WDK.x64.10.0.26100.1 -Recurse -Filter InfVerif.exe | Select-Object -First 1
+          if (!$verifier) { throw "InfVerif no disponible" }
+          & $verifier.FullName /w artifacts/driver/MagicMouseBridge.inf
+          if ($LASTEXITCODE -ne 0) { throw "INF no válido" }
+      - name: Generate unsigned catalog
+        shell: pwsh
+        run: |
+          $tool = Get-ChildItem drivers/packages/Microsoft.Windows.WDK.x64.10.0.26100.1 -Recurse -Filter Inf2Cat.exe | Select-Object -First 1
+          if (!$tool) { throw "Inf2Cat not available" }
+          & $tool.FullName /driver:artifacts/driver /os:10_VB_X64,10_CO_X64,10_NI_X64,10_GE_X64 /uselocaltime
+          if ($LASTEXITCODE -ne 0) { throw "Catalog generation failed" }
+          if (!(Test-Path artifacts/driver/MagicMouseBridge.cat)) { throw "Missing catalog" }
+      - name: Verify unsigned package cannot become a distribution
+        shell: pwsh
+        run: |
+          $tool = Get-ChildItem drivers/packages -Recurse -Filter signtool.exe | Where-Object FullName -Match '[\\/]x64[\\/]' | Select-Object -First 1
+          if (!$tool) { throw "SignTool not available" }
+          $rejected = $false
+          try {
+            & ./drivers/Prepare-Distribution.ps1 -PackageDirectory artifacts/driver -SignToolPath $tool.FullName -OutputDirectory artifacts/forbidden-distribution
+          } catch {
+            if ($_.Exception.Message -notlike 'Kernel signing policy verification failed*') { throw }
+            $rejected = $true
+          }
+          if (!$rejected -or (Test-Path artifacts/forbidden-distribution)) { throw "Unsigned distribution was not rejected" }
+          $global:LASTEXITCODE = 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MagicMouseBridge-experimental-unsigned-x64
+          path: |
+            artifacts/driver/*.sys
+            artifacts/driver/*.inf
+            artifacts/driver/*.cat

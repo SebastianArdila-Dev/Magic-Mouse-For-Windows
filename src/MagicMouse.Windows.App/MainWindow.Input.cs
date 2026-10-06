@@ -78,6 +78,7 @@ public sealed partial class MainWindow
         try
         {
             if (!AppleMouseReportParser.TryParse(Convert.FromHexString(report.BytesHex), report.Timestamp, out var decoded)) return;
+            if (report.Discontinuity) ResetInputEngine();
             _decodedReports++; var frame = decoded!.Frame;
             if (decoded.Buttons != 0) { ResetInputEngine(); return; } // physical clicks remain owned by the Windows driver
             _pointerMovedSinceTouch |= decoded.DeltaX != 0 || decoded.DeltaY != 0;
