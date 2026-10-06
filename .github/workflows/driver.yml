@@ -16,6 +16,14 @@ jobs:
       - uses: NuGet/setup-nuget@v2
       - name: Restore official WDK and SDK
         run: nuget restore drivers/packages.config -PackagesDirectory drivers/packages -NonInteractive
+      - name: Prepare WDK host tools
+        shell: pwsh
+        run: |
+          $bin = 'drivers/packages/Microsoft.Windows.WDK.x64.10.0.26100.1/c/bin/10.0.26100.0'
+          if (!(Test-Path "$bin/x86/ApiValidator.exe")) {
+            New-Item -ItemType Directory -Force "$bin/x86" | Out-Null
+            Copy-Item "$bin/x64/*" "$bin/x86/" -Recurse -Force
+          }
       - name: Build KMDF x64
         run: msbuild drivers/MagicMouseBridge/MagicMouseBridge.vcxproj /p:Configuration=Release /p:Platform=x64 /p:SignMode=Off /m
       - name: Validate extension INF
