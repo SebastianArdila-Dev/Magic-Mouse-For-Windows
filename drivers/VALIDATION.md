@@ -15,9 +15,9 @@ Registrar modelo, firmware, versión de Windows, adaptador Bluetooth, descriptor
 | Apagar y reconectar | No quedan solicitudes o botones bloqueados; la app conserva su configuración y recupera la captura. |
 | Dos dispositivos | El puente no se vincula a otro mouse del mismo modelo por coincidencia parcial de identidad. |
 | Retirada durante lectura o activación | Las solicitudes finalizan con error controlado; no hay bloqueo, uso de memoria liberada ni caída de Windows. |
-| Acceso sin autorización | Un usuario sin privilegios no abre el PDO experimental ni envía IOCTLs. |
+| Acceso sin autorización | Un usuario interactivo estándar abre solo con lectura; cuentas de red y rutas secundarias se rechazan; IOCTLs desconocidos y buffers incompletos fallan. |
 | Driver Verifier | Sin errores de pool, IRQL, I/O, bloqueos ni fugas durante estrés, retirada y suspensión. |
 
 Ejecutar las pruebas por cada modelo y adaptador que se declare compatible. Revisar el reporte 7F añadido, sus longitudes y posibles colisiones con el descriptor original antes de habilitar la captura. Actualmente los ejes nativos deben ser relativos, de 16 bits y tener rango -32768..32767; otros formatos quedan sin activar.
 
-Antes de distribuir: resolver cualquier fallo, habilitar un servicio intermediario seguro para la app sin elevación, preparar catálogo y firma de producción y repetir la matriz con el paquete final. No presentar un binario sin firma como una descarga plug and play.
+Antes de distribuir: resolver cualquier fallo, validar la política de acceso del PDO sin elevar la app, preparar catálogo y firma de producción y repetir la matriz con el paquete final. No presentar un binario sin firma como una descarga plug and play.

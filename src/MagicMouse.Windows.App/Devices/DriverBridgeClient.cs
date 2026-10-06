@@ -42,7 +42,7 @@ internal sealed class DriverBridgeClient : IDisposable
             catch { handle.Dispose(); throw; }
             handle.Dispose();
         }
-        throw new InvalidOperationException("No hay un puente experimental accesible para este mouse. El prototipo requiere un entorno de pruebas elevado.");
+        throw new InvalidOperationException("No hay un puente experimental accesible para este mouse. Comprueba la instalación y la conexión del dispositivo.");
     }
     public void EnableTouch()
     {

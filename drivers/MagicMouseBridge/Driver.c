@@ -19,6 +19,7 @@ typedef struct _BRIDGE_CONTEXT {
     HID_DEVICE_ATTRIBUTES Identity;
     BOOLEAN Verified;
     BOOLEAN Enabled;
+    BOOLEAN ClientConnected;
     HIDP_DEVICE_DESC Parsed;
     PHIDP_PREPARSED_DATA MouseData;
     UCHAR MouseReportId;
@@ -45,6 +46,7 @@ EVT_WDF_REQUEST_COMPLETION_ROUTINE BridgeDescriptorComplete;
 EVT_WDF_OBJECT_CONTEXT_CLEANUP BridgeCleanup;
 EVT_WDF_IO_QUEUE_IO_DEVICE_CONTROL BridgeClientIoctl;
 EVT_WDF_DEVICE_FILE_CREATE BridgeFileCreate;
+EVT_WDF_FILE_CLEANUP BridgeFileCleanup;
 
 /* This opaque vendor collection increases the shared transport read buffer. Native mouse
    reports are still reconstructed using the original, unmodified preparsed descriptor. */
@@ -195,13 +197,14 @@ static NTSTATUS CreateRawPdo(WDFDEVICE parent)
     NTSTATUS status;
     DECLARE_CONST_UNICODE_STRING(deviceId, L"SebastianArdila\\MagicMouseBridge");
     DECLARE_CONST_UNICODE_STRING(instanceId, L"Bridge");
+    DECLARE_CONST_UNICODE_STRING(access, L"D:P(D;;GA;;;NU)(A;;GA;;;SY)(A;;GA;;;BA)(A;;GR;;;IU)");
     if (init == NULL) return STATUS_INSUFFICIENT_RESOURCES;
     status = WdfPdoInitAssignRawDevice(init, &GUID_MAGIC_MOUSE_RAW_PDO);
-    if (NT_SUCCESS(status)) status = WdfDeviceInitAssignSDDLString(init, &SDDL_DEVOBJ_SYS_ALL_ADM_ALL);
+    if (NT_SUCCESS(status)) status = WdfDeviceInitAssignSDDLString(init, &access);
     if (NT_SUCCESS(status)) status = WdfPdoInitAssignDeviceID(init, &deviceId);
     if (NT_SUCCESS(status)) status = WdfPdoInitAssignInstanceID(init, &instanceId);
     if (!NT_SUCCESS(status)) { WdfDeviceInitFree(init); return status; }
-    WDF_FILEOBJECT_CONFIG_INIT(&files, BridgeFileCreate, WDF_NO_EVENT_CALLBACK, WDF_NO_EVENT_CALLBACK);
+    WDF_FILEOBJECT_CONFIG_INIT(&files, BridgeFileCreate, WDF_NO_EVENT_CALLBACK, BridgeFileCleanup);
     WdfDeviceInitSetFileObjectConfig(init, &files, WDF_NO_OBJECT_ATTRIBUTES);
     WdfDeviceInitSetExclusive(init, TRUE);
     WdfDeviceInitSetIoType(init, WdfDeviceIoBuffered);
@@ -352,8 +355,12 @@ VOID BridgeReadComplete(WDFREQUEST request, WDFIOTARGET target, PWDF_REQUEST_COM
             WdfSpinLockAcquire(ctx->Lock);
             if (ctx->Verified && ctx->Enabled && ValidMouseReport(ctx->Identity.ProductID, data, (ULONG)size)) {
                 ULONG index;
-                translate = TRUE;
                 MM_BRIDGE_PACKET *packet;
+                translate = TRUE;
+                if (!ctx->ClientConnected) {
+                    WdfSpinLockRelease(ctx->Lock);
+                    goto TranslateNative;
+                }
                 if (ctx->Count == MM_BRIDGE_RING_SIZE) {
                     ctx->Head = (ctx->Head + 1) % MM_BRIDGE_RING_SIZE; --ctx->Count; ctx->Dropped = TRUE;
                 }
@@ -368,6 +375,7 @@ VOID BridgeReadComplete(WDFREQUEST request, WDFIOTARGET target, PWDF_REQUEST_COM
             WdfSpinLockRelease(ctx->Lock);
         }
     }
+TranslateNative:
     if (translate) {
         UCHAR native[MM_BRIDGE_MAX_REPORT];
         if (TranslateMouse(ctx, (const UCHAR *)irp->UserBuffer, (ULONG)size, native) &&
@@ -384,11 +392,23 @@ VOID BridgeReadComplete(WDFREQUEST request, WDFIOTARGET target, PWDF_REQUEST_COM
 VOID BridgeFileCreate(WDFDEVICE device, WDFREQUEST request, WDFFILEOBJECT file)
 {
     BRIDGE_CONTEXT *ctx = BridgeContext(RawContext(device)->Parent);
-    UNREFERENCED_PARAMETER(file);
+    if (WdfFileObjectGetFileName(file)->Length != 0) {
+        WdfRequestComplete(request, STATUS_OBJECT_NAME_INVALID); return;
+    }
     WdfSpinLockAcquire(ctx->Lock);
+    ctx->ClientConnected = TRUE;
     ctx->Head = ctx->Count = 0; ctx->Dropped = TRUE;
     WdfSpinLockRelease(ctx->Lock);
     WdfRequestComplete(request, STATUS_SUCCESS);
+}
+
+VOID BridgeFileCleanup(WDFFILEOBJECT file)
+{
+    BRIDGE_CONTEXT *ctx = BridgeContext(RawContext(WdfFileObjectGetDevice(file))->Parent);
+    WdfSpinLockAcquire(ctx->Lock);
+    ctx->ClientConnected = FALSE; ctx->Head = ctx->Count = 0; ctx->Dropped = TRUE;
+    WdfSpinLockRelease(ctx->Lock);
+    /* Keep translating native motion after the client exits: touch mode is device state. */
 }
 
 VOID BridgeClientIoctl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, size_t inputLength, ULONG code)

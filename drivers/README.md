@@ -13,11 +13,11 @@ Este código es un prototipo para revisión y pruebas. Compilar un archivo SYS n
 - Añade una colección opaca al descriptor para ampliar el buffer de lectura del transporte. Copia los reportes táctiles en un anillo acotado de 64 entradas.
 - Reconstruye movimiento y botones con el descriptor nativo original mediante HidP. Solo permite activar el modo táctil si reconoce un formato de mouse relativo firmado de 16 bits y rango -32768..32767 en X/Y y botones principal/secundario.
 - Los descriptores con ejes de 8 bits se rechazan por ahora; la declaración del identificador 030D no implica compatibilidad táctil completa con Magic Mouse 1.
-- PDO raw independiente y exclusivo, con acceso reservado a administradores/SYSTEM para las pruebas. La seguridad de un servicio intermediario para uso sin elevación queda pendiente.
+- PDO raw independiente y exclusivo: SYSTEM y administradores tienen acceso completo; usuarios interactivos tienen acceso de lectura para los tres IOCTLs acotados. Se deniega el acceso de red y se rechazan rutas secundarias. No se requiere elevar la app ni ejecutar un servicio privilegiado. Esta política todavía requiere validación física y de seguridad con distintas cuentas.
 - IOCTLs limitados a identidad, lectura de reportes y un comando de activación fijo. No acepta direcciones ni comandos HID arbitrarios del usuario.
 - Protocolo versionado, tamaño fijo, identidad exacta del dispositivo padre y detección de pérdidas de reportes.
 
-La app incluye un cliente opcional. La clave local `driver.experimental=true` permite probarlo en un entorno elevado de desarrollo; está desactivada por defecto. No se añaden controles visuales. Si el puente no está accesible, se conserva la lectura HID existente.
+La app incluye un cliente opcional. La clave local `driver.experimental=true` permite probarlo en un entorno de desarrollo; está desactivada por defecto. No se añaden controles visuales. Si el puente no está accesible, se conserva la lectura HID existente.
 
 ## Compilar
 
@@ -28,7 +28,7 @@ nuget restore drivers/packages.config -PackagesDirectory drivers/packages -NonIn
 msbuild drivers/MagicMouseBridge/MagicMouseBridge.vcxproj /p:Configuration=Release /p:Platform=x64 /p:SignMode=Off
 ```
 
-Los paquetes SDK y WDK de Microsoft están fijados a 10.0.26100.1. GitHub Actions compila el SYS y verifica el INF. El artefacto es **experimental y sin firma**, no un instalador para el público.
+Los paquetes SDK y WDK de Microsoft están fijados a 10.0.26100.1. GitHub Actions compila el SYS y verifica el INF. El artefacto incluye SYS, INF y catálogo CAT **experimental y sin firma**, no un instalador para el público.
 
 ## Validación pendiente antes de instalar para uso real
 
@@ -37,7 +37,7 @@ Los paquetes SDK y WDK de Microsoft están fijados a 10.0.26100.1. GitHub Action
 3. Inspeccionar el descriptor original y el ampliado; verificar que los IDs no colisionan, que las longitudes coinciden y que HidClass/MouHid conservan movimiento y clics. La colección 7F no está validada con firmware real.
 4. Probar todos los modelos, clic izquierdo/derecho, movimiento negativo y rápido, scroll y gestos, caída de enlace, apagado, suspensión y múltiples dispositivos.
 5. Driver Verifier: Special Pool, I/O verification, Force IRQL Checking, deadlock detection y KMDF Verifier. Realizar pruebas de estrés y retirada mientras hay solicitudes pendientes.
-6. Resolver los límites de movimiento de Magic Mouse 1 y la seguridad/servicio para la app sin privilegios.
+6. Resolver los límites de movimiento de Magic Mouse 1 y verificar la política de acceso con usuarios estándar, cuentas de red y sesiones distintas.
 7. Preparar catálogo, pruebas HLK y firma mediante Microsoft antes de integrar la instalación. No se desactiva Secure Boot ni la comprobación de firmas desde la app.
 
 La matriz de aceptación está en [VALIDATION.md](VALIDATION.md). El flujo también ejecuta pruebas C de los tamaños y modelos admitidos; abrir una sesión limpia la cola y marca la discontinuidad inicial.
@@ -49,3 +49,7 @@ La matriz de aceptación está en [VALIDATION.md](VALIDATION.md). El flujo tambi
 - [WDK oficial con NuGet](https://learn.microsoft.com/en-us/windows-hardware/drivers/install-the-wdk-using-nuget).
 - [Firma de controladores](https://learn.microsoft.com/windows-hardware/drivers/install/windows-driver-signing-tutorial).
 - [Formatos públicos del protocolo](https://github.com/torvalds/linux/blob/master/drivers/hid/hid-magicmouse.c). No se incorpora su código GPL ni drivers comerciales.
+
+## Preparar una distribución firmada
+
+Tras recibir el paquete firmado, ejecutar Prepare-Distribution.ps1 indicando el directorio, SignTool oficial y un directorio de salida nuevo. Verifica la política de firma kernel, la firma del catálogo y la versión antes de generar un ZIP con solo INF, SYS y CAT. Un paquete sin firma válida no genera distribución. La verificación de firma no sustituye la matriz física y no publica ni instala archivos automáticamente.

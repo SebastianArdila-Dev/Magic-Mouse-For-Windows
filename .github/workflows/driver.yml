@@ -45,9 +45,18 @@ jobs:
           if (!$verifier) { throw "InfVerif no disponible" }
           & $verifier.FullName /w artifacts/driver/MagicMouseBridge.inf
           if ($LASTEXITCODE -ne 0) { throw "INF no válido" }
+      - name: Generate unsigned catalog
+        shell: pwsh
+        run: |
+          $tool = Get-ChildItem drivers/packages/Microsoft.Windows.WDK.x64.10.0.26100.1 -Recurse -Filter Inf2Cat.exe | Select-Object -First 1
+          if (!$tool) { throw "Inf2Cat not available" }
+          & $tool.FullName /driver:artifacts/driver /os:10_VB_X64,10_CO_X64,10_NI_X64,10_GE_X64 /uselocaltime
+          if ($LASTEXITCODE -ne 0) { throw "Catalog generation failed" }
+          if (!(Test-Path artifacts/driver/MagicMouseBridge.cat)) { throw "Missing catalog" }
       - uses: actions/upload-artifact@v4
         with:
           name: MagicMouseBridge-experimental-unsigned-x64
           path: |
             artifacts/driver/*.sys
             artifacts/driver/*.inf
+            artifacts/driver/*.cat

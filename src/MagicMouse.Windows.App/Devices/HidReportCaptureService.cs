@@ -120,16 +120,17 @@ public sealed class HidReportCaptureService : IDisposable
 
     private async Task CaptureBridgeLoopAsync(DriverBridgeClient bridge, CancellationToken cancellation)
     {
-        ulong? previousSequence = null;
+        var sequence = new MagicMouse.Core.Drivers.DriverBridgeSequence();
         try
         {
             while (!cancellation.IsCancellationRequested)
             {
                 var packet = bridge.Read();
                 if (packet is null) { await Task.Delay(8, cancellation); continue; }
+                if (!sequence.Accept(packet.Sequence, packet.Discontinuity, out var discontinuity))
+                    throw new InvalidDataException("El puente devolvió una secuencia de reportes repetida o fuera de orden.");
                 var snapshot = new HidReportSnapshot(packet.Timestamp, packet.Report[0], packet.Report.Length, Convert.ToHexString(packet.Report),
-                    packet.Discontinuity || (previousSequence is { } previous && packet.Sequence != previous + 1));
-                previousSequence = packet.Sequence;
+                    discontinuity);
                 lock (_sync) { _reports.Add(snapshot); if (_reports.Count > 5000) _reports.RemoveRange(0, _reports.Count - 5000); }
                 ReportReceived?.Invoke(snapshot);
             }
