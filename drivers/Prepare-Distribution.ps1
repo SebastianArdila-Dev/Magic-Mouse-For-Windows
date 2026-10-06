@@ -15,6 +15,12 @@ $inf = Get-Content -LiteralPath (Join-Path $package $names[0]) -Raw
 if ($inf -notmatch 'DriverVer=\d+/\d+/\d+,0\.1\.2\.0' -or $inf -notmatch 'CatalogFile=MagicMouseBridge\.cat') {
     throw 'Unexpected package identity or version.'
 }
+$binary = [IO.File]::ReadAllBytes((Join-Path $package $names[1]))
+if ($binary.Length -lt 64 -or $binary[0] -ne 0x4D -or $binary[1] -ne 0x5A) { throw 'Invalid driver image.' }
+$pe = [BitConverter]::ToInt32($binary, 60)
+if ($pe -lt 64 -or $pe -gt $binary.Length - 24 -or
+    [BitConverter]::ToUInt32($binary, $pe) -ne 0x4550 -or
+    [BitConverter]::ToUInt16($binary, $pe + 4) -ne 0x8664) { throw 'Driver image must be PE x64.' }
 # A generic valid Authenticode signature is insufficient for a kernel driver.
 & $signTool verify /kp /v /c (Join-Path $package $names[2]) (Join-Path $package $names[1])
 if ($LASTEXITCODE -ne 0) { throw 'Kernel signing policy verification failed. No distribution created.' }
