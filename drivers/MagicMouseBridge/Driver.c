@@ -7,6 +7,7 @@
 #include <initguid.h>
 #include <devpkey.h>
 #include "Protocol.h"
+#include "ReportValidation.h"
 
 /* A private interface on a raw child PDO, never the global mouse device class. */
 DEFINE_GUID(GUID_DEVINTERFACE_MAGIC_MOUSE_BRIDGE, 0x5e3f432c,0x47c6,0x4c64,0x9b,0x77,0x8c,0x8a,0xa1,0x3d,0x9e,0xf2);
@@ -43,6 +44,7 @@ EVT_WDF_REQUEST_COMPLETION_ROUTINE BridgeReadComplete;
 EVT_WDF_REQUEST_COMPLETION_ROUTINE BridgeDescriptorComplete;
 EVT_WDF_OBJECT_CONTEXT_CLEANUP BridgeCleanup;
 EVT_WDF_IO_QUEUE_IO_DEVICE_CONTROL BridgeClientIoctl;
+EVT_WDF_DEVICE_FILE_CREATE BridgeFileCreate;
 
 /* This opaque vendor collection increases the shared transport read buffer. Native mouse
    reports are still reconstructed using the original, unmodified preparsed descriptor. */
@@ -156,13 +158,13 @@ static VOID InitialiseNativeMouse(WDFDEVICE device)
         for (i = 0; i < nvalues; ++i) {
             if (values[i].UsagePage != 1 || values[i].IsRange || values[i].IsAbsolute) continue;
             /* Wide, signed relative values are required: never truncate large native motion. */
-            if (values[i].BitSize < 16) continue;
+            if (values[i].BitSize != 16 || values[i].LogicalMin != -32768 || values[i].LogicalMax != 32767) continue;
             if (values[i].NotRange.Usage == 0x30) { report = values[i].ReportID; ctx->XLink = values[i].LinkCollection; x = TRUE; }
         }
         if (!x) continue;
         for (i = 0; i < nvalues; ++i) {
             if (values[i].UsagePage == 1 && !values[i].IsRange && !values[i].IsAbsolute &&
-                values[i].BitSize >= 16 && values[i].NotRange.Usage == 0x31 && values[i].ReportID == report) {
+                values[i].BitSize == 16 && values[i].LogicalMin == -32768 && values[i].LogicalMax == 32767 && values[i].NotRange.Usage == 0x31 && values[i].ReportID == report) {
                 ctx->YLink = values[i].LinkCollection; y = TRUE; break;
             }
         }
@@ -189,6 +191,7 @@ static NTSTATUS CreateRawPdo(WDFDEVICE parent)
     WDFDEVICE child;
     WDF_OBJECT_ATTRIBUTES attributes;
     WDF_IO_QUEUE_CONFIG queue;
+    WDF_FILEOBJECT_CONFIG files;
     NTSTATUS status;
     DECLARE_CONST_UNICODE_STRING(deviceId, L"SebastianArdila\\MagicMouseBridge");
     DECLARE_CONST_UNICODE_STRING(instanceId, L"Bridge");
@@ -198,6 +201,8 @@ static NTSTATUS CreateRawPdo(WDFDEVICE parent)
     if (NT_SUCCESS(status)) status = WdfPdoInitAssignDeviceID(init, &deviceId);
     if (NT_SUCCESS(status)) status = WdfPdoInitAssignInstanceID(init, &instanceId);
     if (!NT_SUCCESS(status)) { WdfDeviceInitFree(init); return status; }
+    WDF_FILEOBJECT_CONFIG_INIT(&files, BridgeFileCreate, WDF_NO_EVENT_CALLBACK, WDF_NO_EVENT_CALLBACK);
+    WdfDeviceInitSetFileObjectConfig(init, &files, WDF_NO_OBJECT_ATTRIBUTES);
     WdfDeviceInitSetExclusive(init, TRUE);
     WdfDeviceInitSetIoType(init, WdfDeviceIoBuffered);
     WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&attributes, RAW_CONTEXT);
@@ -345,7 +350,7 @@ VOID BridgeReadComplete(WDFREQUEST request, WDFIOTARGET target, PWDF_REQUEST_COM
         if (data[0] == 0x29 || data[0] == 0x12) {
             LARGE_INTEGER timestamp; KeQuerySystemTimePrecise(&timestamp);
             WdfSpinLockAcquire(ctx->Lock);
-            if (ctx->Verified && ctx->Enabled) {
+            if (ctx->Verified && ctx->Enabled && ValidMouseReport(ctx->Identity.ProductID, data, (ULONG)size)) {
                 ULONG index;
                 translate = TRUE;
                 MM_BRIDGE_PACKET *packet;
@@ -374,6 +379,16 @@ VOID BridgeReadComplete(WDFREQUEST request, WDFIOTARGET target, PWDF_REQUEST_COM
     }
     /* Unknown or inactive reports retain their original completion. */
     WdfRequestCompleteWithInformation(request, params->IoStatus.Status, params->IoStatus.Information);
+}
+
+VOID BridgeFileCreate(WDFDEVICE device, WDFREQUEST request, WDFFILEOBJECT file)
+{
+    BRIDGE_CONTEXT *ctx = BridgeContext(RawContext(device)->Parent);
+    UNREFERENCED_PARAMETER(file);
+    WdfSpinLockAcquire(ctx->Lock);
+    ctx->Head = ctx->Count = 0; ctx->Dropped = TRUE;
+    WdfSpinLockRelease(ctx->Lock);
+    WdfRequestComplete(request, STATUS_SUCCESS);
 }
 
 VOID BridgeClientIoctl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, size_t inputLength, ULONG code)

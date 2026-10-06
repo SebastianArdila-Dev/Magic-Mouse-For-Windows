@@ -24,6 +24,17 @@ jobs:
             New-Item -ItemType Directory -Force "$bin/x86" | Out-Null
             Copy-Item "$bin/x64/*" "$bin/x86/" -Recurse -Force
           }
+      - name: Test native report envelopes
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath
+          Import-Module "$vs/Common7/Tools/Microsoft.VisualStudio.DevShell.dll"
+          Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments '-arch=amd64 -host_arch=amd64'
+          New-Item -ItemType Directory -Force artifacts/native-tests | Out-Null
+          cl /nologo /W4 /WX drivers/tests/ReportValidationTests.c /Foartifacts/native-tests/ /Feartifacts/native-tests/ReportValidationTests.exe
+          if ($LASTEXITCODE -ne 0) { throw "Native tests failed to compile" }
+          & ./artifacts/native-tests/ReportValidationTests.exe
+          if ($LASTEXITCODE -ne 0) { throw "Invalid native report validation" }
       - name: Build KMDF x64
         run: msbuild drivers/MagicMouseBridge/MagicMouseBridge.vcxproj /p:Configuration=Release /p:Platform=x64 /p:SignMode=Off /m
       - name: Validate extension INF
