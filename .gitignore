@@ -23,3 +23,9 @@ startup-error.txt
 credentials.json
 .ssh/
 .aws/
+
+drivers/packages/
+drivers/**/obj/
+*.vcxproj.user
+*.sys
+*.cat

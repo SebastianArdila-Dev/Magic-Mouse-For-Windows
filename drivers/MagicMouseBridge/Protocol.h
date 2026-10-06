@@ -1,0 +1,37 @@
+#ifndef MAGIC_MOUSE_BRIDGE_PROTOCOL_H
+#define MAGIC_MOUSE_BRIDGE_PROTOCOL_H
+
+#define MM_BRIDGE_MAGIC 0x424D4D53u
+#define MM_BRIDGE_VERSION 1u
+#define MM_BRIDGE_MAX_REPORT 160u
+#define MM_BRIDGE_RING_SIZE 64u
+#define MM_BRIDGE_DISCONTINUITY 1u
+#define IOCTL_MM_BRIDGE_INFO CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_READ_ACCESS)
+#define IOCTL_MM_BRIDGE_REPORT CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_READ_ACCESS)
+#define IOCTL_MM_BRIDGE_ENABLE_TOUCH CTL_CODE(FILE_DEVICE_UNKNOWN, 0x802, METHOD_BUFFERED, FILE_READ_ACCESS)
+
+/* All integers are little-endian. Explicit offsets are also checked by the managed tests. */
+typedef struct _MM_BRIDGE_PACKET {
+    ULONG Magic;
+    ULONG Version;
+    ULONG Flags;
+    ULONG Length;
+    ULONGLONG Sequence;
+    LONGLONG FileTime;
+    USHORT VendorId;
+    USHORT ProductId;
+    ULONG Reserved;
+    UCHAR Report[MM_BRIDGE_MAX_REPORT];
+} MM_BRIDGE_PACKET, *PMM_BRIDGE_PACKET;
+
+typedef struct _MM_BRIDGE_INFO {
+    ULONG Magic;
+    ULONG Version;
+    USHORT VendorId;
+    USHORT ProductId;
+    USHORT Firmware;
+    USHORT Reserved;
+    WCHAR InstanceId[256];
+} MM_BRIDGE_INFO, *PMM_BRIDGE_INFO;
+
+#endif
