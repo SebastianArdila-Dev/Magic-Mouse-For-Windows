@@ -335,6 +335,7 @@ VOID BridgeReadComplete(WDFREQUEST request, WDFIOTARGET target, PWDF_REQUEST_COM
     BRIDGE_CONTEXT *ctx = BridgeContext((WDFDEVICE)context);
     PIRP irp = WdfRequestWdmGetIrp(request);
     ULONG_PTR size = params->IoStatus.Information;
+    BOOLEAN translate = FALSE;
     WDF_REQUEST_PARAMETERS original;
     UNREFERENCED_PARAMETER(target);
     WDF_REQUEST_PARAMETERS_INIT(&original); WdfRequestGetParameters(request, &original);
@@ -346,6 +347,7 @@ VOID BridgeReadComplete(WDFREQUEST request, WDFIOTARGET target, PWDF_REQUEST_COM
             WdfSpinLockAcquire(ctx->Lock);
             if (ctx->Verified && ctx->Enabled) {
                 ULONG index;
+                translate = TRUE;
                 MM_BRIDGE_PACKET *packet;
                 if (ctx->Count == MM_BRIDGE_RING_SIZE) {
                     ctx->Head = (ctx->Head + 1) % MM_BRIDGE_RING_SIZE; --ctx->Count; ctx->Dropped = TRUE;
@@ -361,7 +363,16 @@ VOID BridgeReadComplete(WDFREQUEST request, WDFIOTARGET target, PWDF_REQUEST_COM
             WdfSpinLockRelease(ctx->Lock);
         }
     }
-    /* Original bytes, status and lengths are deliberately unchanged. */
+    if (translate) {
+        UCHAR native[MM_BRIDGE_MAX_REPORT];
+        if (TranslateMouse(ctx, (const UCHAR *)irp->UserBuffer, (ULONG)size, native) &&
+            ctx->MouseLength <= original.Parameters.DeviceIoControl.OutputBufferLength) {
+            RtlCopyMemory(irp->UserBuffer, native, ctx->MouseLength);
+            WdfRequestCompleteWithInformation(request, params->IoStatus.Status, ctx->MouseLength);
+            return;
+        }
+    }
+    /* Unknown or inactive reports retain their original completion. */
     WdfRequestCompleteWithInformation(request, params->IoStatus.Status, params->IoStatus.Information);
 }
 
