@@ -5,7 +5,7 @@
   <PropertyGroup Label="Configuration"><ConfigurationType>Driver</ConfigurationType><PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset><DriverType>KMDF</DriverType><DriverTargetPlatform>Universal</DriverTargetPlatform><TargetVersion>Windows10</TargetVersion><UseDebugLibraries>false</UseDebugLibraries></PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup><OutDir>$(MSBuildThisFileDirectory)..\..\artifacts\driver\</OutDir><IntDir>$(MSBuildThisFileDirectory)obj\</IntDir><TargetName>MagicMouseBridge</TargetName><SignMode>Off</SignMode><EnableInf2Cat>false</EnableInf2Cat></PropertyGroup>
-  <ItemDefinitionGroup><ClCompile><WarningLevel>Level4</WarningLevel><TreatWarningAsError>true</TreatWarningAsError><DebugInformationFormat>None</DebugInformationFormat></ClCompile><Link><AdditionalDependencies>hidparse.lib;%(AdditionalDependencies)</AdditionalDependencies><GenerateDebugInformation>false</GenerateDebugInformation></Link></ItemDefinitionGroup>
+  <ItemDefinitionGroup><ClCompile><WarningLevel>Level4</WarningLevel><TreatWarningAsError>true</TreatWarningAsError><DebugInformationFormat>None</DebugInformationFormat></ClCompile><Link><AdditionalDependencies>hidparse.lib;wdmsec.lib;%(AdditionalDependencies)</AdditionalDependencies><GenerateDebugInformation>false</GenerateDebugInformation></Link></ItemDefinitionGroup>
   <ItemGroup><ClCompile Include="Driver.c" /><ClInclude Include="Protocol.h" /></ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
