@@ -257,19 +257,27 @@ NTSTATUS BridgeD0Entry(WDFDEVICE device, WDF_POWER_DEVICE_STATE previous)
 {
     BRIDGE_CONTEXT *ctx = BridgeContext(device);
     HID_DEVICE_ATTRIBUTES identity;
+    MM_BRIDGE_INFO info;
+    WDF_DEVICE_PROPERTY_DATA property;
+    DEVPROPTYPE propertyType;
     ULONG bytes;
     NTSTATUS status;
     UNREFERENCED_PARAMETER(previous);
     RtlZeroMemory(&identity, sizeof(identity)); identity.Size = sizeof(identity);
     InitialiseNativeMouse(device);
     status = TransportRequest(device, IOCTL_HID_GET_DEVICE_ATTRIBUTES, &identity, sizeof(identity), FALSE);
+    RtlZeroMemory(&info, sizeof(info));
+    info.Magic = MM_BRIDGE_MAGIC; info.Version = MM_BRIDGE_VERSION;
+    info.VendorId = identity.VendorID; info.ProductId = identity.ProductID; info.Firmware = identity.VersionNumber;
+    WDF_DEVICE_PROPERTY_DATA_INIT(&property, &DEVPKEY_Device_InstanceId);
+    if (!NT_SUCCESS(WdfDeviceQueryPropertyEx(device, &property, sizeof(info.InstanceId), info.InstanceId, &bytes, &propertyType)) ||
+        propertyType != DEVPROP_TYPE_STRING) info.InstanceId[0] = 0;
     WdfSpinLockAcquire(ctx->Lock);
     ctx->Verified = NT_SUCCESS(status) && Recognised(identity.VendorID, identity.ProductID);
     ctx->Identity = identity; ctx->Enabled = FALSE;
     ctx->Head = ctx->Count = 0; ctx->Dropped = TRUE;
     ctx->Info = info;
     WdfSpinLockRelease(ctx->Lock);
-    /* Passthrough remains operational even when identity/feature requests are unsupported. */
     return STATUS_SUCCESS;
 }
 
